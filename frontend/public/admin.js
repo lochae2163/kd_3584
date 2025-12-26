@@ -1,7 +1,7 @@
 // ========================================
 // Configuration
 // ========================================
-const API_URL = 'http://localhost:8001';
+const API_URL = 'https://kd3584-production.up.railway.app/';
 
 // ========================================
 // DOM Elements

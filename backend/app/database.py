@@ -1,6 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import settings
 import logging
+import certifi
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,11 @@ class Database:
     async def connect_db(cls):
         """Connect to MongoDB Atlas."""
         try:
-            cls.client = AsyncIOMotorClient(settings.mongodb_url)
+            cls.client = AsyncIOMotorClient(
+                settings.mongodb_url,
+                tlsCAFile=certifi.where(),
+                serverSelectionTimeoutMS=5000
+            )
             # Test connection
             await cls.client.admin.command('ping')
             logger.info("✅ Connected to MongoDB!")

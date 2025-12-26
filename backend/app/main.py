@@ -111,3 +111,9 @@ async def test_csv_parse():
             "error": str(e),
             "type": type(e).__name__
         }
+    # Add this at the VERY END of main.py
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

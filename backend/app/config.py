@@ -1,36 +1,33 @@
 from pydantic_settings import BaseSettings
 from typing import List
+import os
 
 class Settings(BaseSettings):
-    """
-    Application settings loaded from environment variables.
-    Uses pydantic for validation and type checking.
-    """
+    """Application settings."""
     
     # Application
-    app_name: str = "KvK Contribution Tracker"
+    app_name: str = "KvK Kingdom Tracker"
     app_version: str = "1.0.0"
-    debug: bool = True
+    debug: bool = False
     
     # Security
-    secret_key: str
+    secret_key: str = "default-secret-key-change-in-production"
     algorithm: str = "HS256"
-    access_token_expire_minutes: int = 1440  # 24 hours
+    access_token_expire_minutes: int = 1440
     
-    # Admin credentials (temporary - will move to database later)
-    admin_username: str
-    admin_password: str
+    # Admin
+    admin_username: str = "admin"
+    admin_password: str = "admin123"
     
     # Database
-    mongodb_url: str
-    database_name: str = "kd3584"
+    mongodb_url: str = ""
+    database_name: str = "kvk_tracker"
     
     # CORS
-    cors_origins: List[str] = ["http://localhost:3000"]
+    cors_origins: List[str] = ["*"]
     
     class Config:
         env_file = ".env"
         case_sensitive = False
 
-# Create single instance to use across app
 settings = Settings()

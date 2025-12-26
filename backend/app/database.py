@@ -1,16 +1,10 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.errors import ConnectionFailure
 from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 class Database:
-    """
-    Database connection manager.
-    Uses Motor (async MongoDB driver) for FastAPI compatibility.
-    """
-    
     client: AsyncIOMotorClient = None
     
     @classmethod
@@ -20,29 +14,31 @@ class Database:
             cls.client = AsyncIOMotorClient(settings.mongodb_url)
             # Test connection
             await cls.client.admin.command('ping')
-            logger.info("✅ Successfully connected to MongoDB Atlas!")
-        except ConnectionFailure as e:
-            logger.error(f"❌ Failed to connect to MongoDB: {e}")
-            raise
+            logger.info("✅ Connected to MongoDB!")
+        except Exception as e:
+            logger.error(f"❌ MongoDB connection failed: {e}")
+            # Don't crash - let the app start anyway
+            cls.client = None
     
     @classmethod
     async def close_db(cls):
         """Close MongoDB connection."""
         if cls.client:
             cls.client.close()
-            logger.info("🔌 MongoDB connection closed")
+            logger.info("🔌 MongoDB closed")
     
     @classmethod
     def get_database(cls):
-        """Get database instance."""
+        if cls.client is None:
+            return None
         return cls.client[settings.database_name]
     
     @classmethod
     def get_collection(cls, collection_name: str):
-        """Get specific collection."""
-        return cls.get_database()[collection_name]
+        db = cls.get_database()
+        if db is None:
+            return None
+        return db[collection_name]
 
-# Convenience function
 def get_db():
-    """Dependency for route handlers."""
     return Database.get_database()

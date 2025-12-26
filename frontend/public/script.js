@@ -1,7 +1,7 @@
 // ========================================
 // Configuration
 // ========================================
-const API_URL = 'https://kd3584-production.up.railway.app/';
+const API_URL = 'https://kd3584-production.up.railway.app';
 const KVK_SEASON_ID = 'season_1';
 
 // ========================================

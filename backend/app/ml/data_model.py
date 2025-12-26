@@ -1,0 +1,420 @@
+"""
+ML-powered Data Processing Model for KvK Tracker
+================================================
+This module handles:
+1. CSV data cleaning and validation
+2. Delta calculation between baseline and current data
+3. Data transformation for frontend display
+4. Anomaly detection (optional future feature)
+
+Author: Kingdom 3584
+Project: KvK Stats Tracker (Data Science Portfolio)
+"""
+
+import pandas as pd
+import numpy as np
+from typing import Dict, List, Tuple, Optional
+from datetime import datetime
+from io import StringIO
+from dataclasses import dataclass
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PlayerStats:
+    """Data class for player statistics."""
+    governor_id: str
+    governor_name: str
+    power: int
+    kill_points: int
+    deads: int
+    t4_kills: int
+    t5_kills: int
+
+
+@dataclass
+class PlayerDelta:
+    """Data class for player stats with delta from baseline."""
+    governor_id: str
+    governor_name: str
+    power: int
+    kill_points: int
+    deads: int
+    t4_kills: int
+    t5_kills: int
+    delta_power: int
+    delta_kill_points: int
+    delta_deads: int
+    delta_t4_kills: int
+    delta_t5_kills: int
+
+
+class KvKDataModel:
+    """
+    Machine Learning Model for KvK Data Processing
+    
+    This class handles all data processing tasks:
+    - CSV parsing and cleaning
+    - Data validation
+    - Delta calculation
+    - Statistical analysis
+    
+    Usage:
+        model = KvKDataModel()
+        clean_data = model.process_csv(csv_content)
+        deltas = model.calculate_deltas(baseline_data, current_data)
+    """
+    
+    # Expected columns in CSV
+    REQUIRED_COLUMNS = [
+        'governor_id',
+        'governor_name', 
+        'power',
+        'deads',
+        'kill_points',
+        't4_kills',
+        't5_kills'
+    ]
+    
+    # Numeric columns that need cleaning
+    NUMERIC_COLUMNS = ['power', 'deads', 'kill_points', 't4_kills', 't5_kills']
+    
+    def __init__(self):
+        """Initialize the data model."""
+        self.baseline_data: Optional[pd.DataFrame] = None
+        self.current_data: Optional[pd.DataFrame] = None
+        self.processing_stats = {}
+    
+    # ==========================================
+    # Data Cleaning Methods
+    # ==========================================
+    
+    def clean_numeric_value(self, value) -> int:
+        """
+        Clean a numeric value by removing commas and converting to int.
+        
+        Handles:
+        - "230,639,240" -> 230639240
+        - "230639240" -> 230639240
+        - 230639240 -> 230639240
+        - NaN/None -> 0
+        
+        Args:
+            value: The value to clean
+            
+        Returns:
+            int: Cleaned integer value
+        """
+        if pd.isna(value) or value is None:
+            return 0
+        
+        if isinstance(value, (int, float)):
+            return int(value)
+        
+        # Remove commas, quotes, and whitespace
+        cleaned = str(value).replace(',', '').replace('"', '').replace("'", "").strip()
+        
+        if not cleaned:
+            return 0
+        
+        try:
+            return int(float(cleaned))
+        except (ValueError, TypeError):
+            logger.warning(f"Could not convert value: {value}")
+            return 0
+    
+    def clean_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Clean entire dataframe.
+        
+        Operations:
+        1. Strip whitespace from column names
+        2. Convert numeric columns
+        3. Convert governor_id to string
+        4. Remove duplicate entries
+        5. Handle missing values
+        
+        Args:
+            df: Raw dataframe
+            
+        Returns:
+            pd.DataFrame: Cleaned dataframe
+        """
+        # Make a copy to avoid modifying original
+        df = df.copy()
+        
+        # Clean column names (strip whitespace, lowercase)
+        df.columns = df.columns.str.strip().str.lower()
+        
+        # Clean numeric columns
+        for col in self.NUMERIC_COLUMNS:
+            if col in df.columns:
+                df[col] = df[col].apply(self.clean_numeric_value)
+        
+        # Ensure governor_id is string
+        if 'governor_id' in df.columns:
+            df['governor_id'] = df['governor_id'].astype(str).str.strip()
+        
+        # Ensure governor_name is string
+        if 'governor_name' in df.columns:
+            df['governor_name'] = df['governor_name'].astype(str).str.strip()
+        
+        # Remove duplicates (keep last occurrence)
+        df = df.drop_duplicates(subset=['governor_id'], keep='last')
+        
+        # Reset index
+        df = df.reset_index(drop=True)
+        
+        return df
+    
+    # ==========================================
+    # CSV Processing Methods
+    # ==========================================
+    
+    def validate_csv(self, csv_content: str) -> Tuple[bool, str, Optional[pd.DataFrame]]:
+        """
+        Validate CSV content and structure.
+        
+        Args:
+            csv_content: Raw CSV string
+            
+        Returns:
+            Tuple of (is_valid, message, dataframe or None)
+        """
+        try:
+            # Try to read CSV
+            df = pd.read_csv(StringIO(csv_content))
+            
+            # Check if empty
+            if df.empty:
+                return False, "CSV file is empty", None
+            
+            # Clean column names for comparison
+            df.columns = df.columns.str.strip().str.lower()
+            
+            # Check required columns
+            missing_cols = set(self.REQUIRED_COLUMNS) - set(df.columns)
+            if missing_cols:
+                return False, f"Missing required columns: {missing_cols}", None
+            
+            return True, "CSV is valid", df
+            
+        except Exception as e:
+            return False, f"Failed to parse CSV: {str(e)}", None
+    
+    def process_csv(self, csv_content: str) -> Dict:
+        """
+        Process CSV content through the ML pipeline.
+        
+        Pipeline:
+        1. Validate CSV structure
+        2. Clean data
+        3. Calculate statistics
+        4. Return processed data
+        
+        Args:
+            csv_content: Raw CSV string
+            
+        Returns:
+            Dict with processed data and metadata
+        """
+        # Validate
+        is_valid, message, df = self.validate_csv(csv_content)
+        
+        if not is_valid:
+            return {
+                "success": False,
+                "error": message,
+                "data": None
+            }
+        
+        # Clean data
+        df_cleaned = self.clean_dataframe(df)
+        
+        # Calculate processing stats
+        self.processing_stats = {
+            "rows_processed": len(df_cleaned),
+            "columns": list(df_cleaned.columns),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        # Convert to list of dicts for API response
+        players = []
+        for _, row in df_cleaned.iterrows():
+            players.append({
+                "governor_id": str(row['governor_id']),
+                "governor_name": str(row['governor_name']),
+                "stats": {
+                    "power": int(row['power']),
+                    "kill_points": int(row['kill_points']),
+                    "deads": int(row['deads']),
+                    "t4_kills": int(row['t4_kills']),
+                    "t5_kills": int(row['t5_kills'])
+                }
+            })
+        
+        return {
+            "success": True,
+            "message": f"Successfully processed {len(players)} players",
+            "player_count": len(players),
+            "players": players,
+            "processing_stats": self.processing_stats
+        }
+    
+    # ==========================================
+    # Delta Calculation Methods
+    # ==========================================
+    
+    def calculate_player_delta(
+        self, 
+        baseline_stats: Dict, 
+        current_stats: Dict
+    ) -> Dict:
+        """
+        Calculate delta between baseline and current stats for one player.
+        
+        Args:
+            baseline_stats: Player's baseline stats dict
+            current_stats: Player's current stats dict
+            
+        Returns:
+            Dict with delta values
+        """
+        delta = {}
+        
+        for field in self.NUMERIC_COLUMNS:
+            baseline_val = baseline_stats.get(field, 0)
+            current_val = current_stats.get(field, 0)
+            delta[field] = current_val - baseline_val
+        
+        return delta
+    
+    def calculate_all_deltas(
+        self, 
+        baseline_players: List[Dict], 
+        current_players: List[Dict]
+    ) -> List[Dict]:
+        """
+        Calculate deltas for all players.
+        
+        Args:
+            baseline_players: List of player dicts from baseline
+            current_players: List of player dicts from current snapshot
+            
+        Returns:
+            List of player dicts with delta information
+        """
+        # Create baseline lookup by governor_id
+        baseline_lookup = {}
+        for player in baseline_players:
+            gov_id = player.get('governor_id')
+            baseline_lookup[gov_id] = player.get('stats', {})
+        
+        # Calculate deltas for each current player
+        results = []
+        
+        for player in current_players:
+            gov_id = player.get('governor_id')
+            current_stats = player.get('stats', {})
+            
+            # Get baseline stats (empty dict if player not in baseline)
+            baseline_stats = baseline_lookup.get(gov_id, {})
+            
+            # Calculate delta
+            delta = self.calculate_player_delta(baseline_stats, current_stats)
+            
+            # Add to results
+            results.append({
+                "governor_id": gov_id,
+                "governor_name": player.get('governor_name'),
+                "stats": current_stats,
+                "delta": delta,
+                "in_baseline": gov_id in baseline_lookup
+            })
+        
+        return results
+    
+    # ==========================================
+    # Statistical Analysis Methods
+    # ==========================================
+    
+    def calculate_summary_stats(self, players: List[Dict]) -> Dict:
+        """
+        Calculate summary statistics for a list of players.
+        
+        Args:
+            players: List of player dicts
+            
+        Returns:
+            Dict with summary statistics
+        """
+        if not players:
+            return {}
+        
+        # Convert to dataframe for easy stats calculation
+        stats_list = [p.get('stats', {}) for p in players]
+        df = pd.DataFrame(stats_list)
+        
+        summary = {
+            "player_count": len(players),
+            "totals": {},
+            "averages": {},
+            "top_players": {}
+        }
+        
+        # Calculate totals and averages
+        for col in self.NUMERIC_COLUMNS:
+            if col in df.columns:
+                summary["totals"][col] = int(df[col].sum())
+                summary["averages"][col] = int(df[col].mean())
+        
+        # Find top players for each stat
+        for col in self.NUMERIC_COLUMNS:
+            if col in df.columns:
+                idx = df[col].idxmax()
+                summary["top_players"][col] = {
+                    "name": players[idx].get('governor_name'),
+                    "governor_id": players[idx].get('governor_id'),
+                    "value": int(df.loc[idx, col])
+                }
+        
+        return summary
+    
+    def rank_players(
+        self, 
+        players: List[Dict], 
+        sort_by: str = "kill_points",
+        ascending: bool = False
+    ) -> List[Dict]:
+        """
+        Rank players by a specific stat.
+        
+        Args:
+            players: List of player dicts
+            sort_by: Field to sort by
+            ascending: Sort order
+            
+        Returns:
+            List of player dicts with rank added
+        """
+        if not players:
+            return []
+        
+        # Sort players
+        sorted_players = sorted(
+            players,
+            key=lambda p: p.get('stats', {}).get(sort_by, 0),
+            reverse=not ascending
+        )
+        
+        # Add rank
+        for i, player in enumerate(sorted_players, 1):
+            player['rank'] = i
+        
+        return sorted_players
+
+
+# Create singleton instance
+kvk_model = KvKDataModel()

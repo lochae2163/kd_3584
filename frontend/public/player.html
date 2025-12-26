@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Stats - Kingdom 3584</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <a href="index.html" class="back-link">← Back to Leaderboard</a>
+            <h1 id="player-name">Loading...</h1>
+            <p id="player-id">Governor ID: ---</p>
+        </header>
+
+        <!-- Player Rank Badge -->
+        <div class="player-rank-section" id="rank-section"></div>
+
+        <!-- Stats Cards -->
+        <section class="player-stats-grid" id="stats-cards">
+            <div class="loading">Loading player stats...</div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <h2>📊 Performance Analysis</h2>
+            
+            <div class="charts-grid-simple">
+                <!-- T5 vs T4 Distribution -->
+                <div class="chart-card">
+                    <div class="chart-container-small">
+                        <canvas id="kills-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- KvK Contribution Delta -->
+                <div class="chart-card">
+                    <div class="chart-container-bar">
+                        <canvas id="delta-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Delta Summary -->
+        <section class="delta-section" id="delta-section">
+            <h2>📈 KvK Changes from Baseline</h2>
+            <div class="delta-grid" id="delta-grid"></div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Kingdom 3584 • KvK Stats Tracker</p>
+        </footer>
+    </div>
+
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="player.js"></script>
+</body>
+</html>

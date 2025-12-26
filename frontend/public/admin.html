@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Kingdom 3584 KvK Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>⚙️ Admin Panel</h1>
+            <p>Kingdom 3584 • Data Management</p>
+            <a href="index.html" class="back-link">← Back to Dashboard</a>
+        </header>
+
+        <!-- Data Status -->
+        <section class="admin-section">
+            <h2>📊 Data Status</h2>
+            <div id="data-status" class="data-status">
+                <div class="loading">Checking data status...</div>
+            </div>
+        </section>
+
+        <!-- Baseline Upload -->
+        <section class="admin-section">
+            <h2>📁 Upload Baseline (Start of KvK)</h2>
+            <p class="section-desc">Upload this ONCE at the start of KvK. This is the reference point for all comparisons.</p>
+            
+            <form id="baseline-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="baseline-file">Select Baseline CSV</label>
+                        <input type="file" id="baseline-file" accept=".csv">
+                    </div>
+                    <div class="form-group">
+                        <label for="baseline-season">KvK Season ID</label>
+                        <input type="text" id="baseline-season" value="season_1">
+                    </div>
+                </div>
+                <button type="submit" class="upload-btn baseline-btn">
+                    📁 Upload Baseline
+                </button>
+            </form>
+            <div id="baseline-message"></div>
+        </section>
+
+        <!-- Current Data Upload -->
+        <section class="admin-section">
+            <h2>📤 Upload Current Data (After Each Fight)</h2>
+            <p class="section-desc">Upload this after each fight to update the leaderboard. Deltas will be calculated from baseline.</p>
+            
+            <form id="current-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="current-file">Select Current CSV</label>
+                        <input type="file" id="current-file" accept=".csv">
+                    </div>
+                    <div class="form-group">
+                        <label for="current-season">KvK Season ID</label>
+                        <input type="text" id="current-season" value="season_1">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description (e.g., "After Pass 4 Fight")</label>
+                    <input type="text" id="description" placeholder="After Pass 4 Fight">
+                </div>
+                <button type="submit" class="upload-btn current-btn">
+                    📤 Upload Current Data
+                </button>
+            </form>
+            <div id="current-message"></div>
+        </section>
+
+        <!-- Upload History -->
+        <section class="admin-section">
+            <h2>📜 Upload History</h2>
+            <p class="section-desc">All data uploads for this KvK season.</p>
+            <div id="history-list" class="history-list">
+                <div class="loading">Loading history...</div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Admin Panel • Kingdom 3584 • ML-Powered Data Processing</p>
+        </footer>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

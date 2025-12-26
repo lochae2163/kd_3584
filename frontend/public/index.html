@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kingdom 3584 - KvK Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🏰 Kingdom 3584</h1>
+            <p>Rise of Kingdoms • KvK Stats Tracker</p>
+        </header>
+
+        <!-- Snapshot Info -->
+        <div class="snapshot-info" id="snapshot-info">
+            <!-- Will show baseline vs current comparison info -->
+        </div>
+
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="stats-grid" id="stats-grid">
+                <!-- Stats cards will be injected here -->
+            </div>
+
+            <div class="top-players" id="top-players">
+                <!-- Top players will be injected here -->
+            </div>
+        </section>
+
+        <!-- Leaderboard Section -->
+        <section class="leaderboard">
+            <div class="leaderboard-header">
+                <div class="leaderboard-title">
+                    <h2>🏆 Leaderboard</h2>
+                    <p id="player-count">Loading...</p>
+                </div>
+
+                <div class="controls">
+                    <input 
+                        type="text" 
+                        class="search-input" 
+                        id="search" 
+                        placeholder="🔍 Search player..."
+                    >
+                    <select class="sort-select" id="sort-by">
+                        <option value="kill_points">Sort: Kill Points</option>
+                        <option value="power">Sort: Power</option>
+                        <option value="t5_kills">Sort: T5 Kills</option>
+                        <option value="t4_kills">Sort: T4 Kills</option>
+                        <option value="deads">Sort: Deaths</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Governor</th>
+                            <th class="text-right">Power</th>
+                            <th class="text-right">Kill Points</th>
+                            <th class="text-right">T5 Kills</th>
+                            <th class="text-right">T4 Kills</th>
+                            <th class="text-right">Deaths</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <tr>
+                            <td colspan="7" class="loading">Loading leaderboard...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built for Kingdom 3584 • Rise of Kingdoms</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

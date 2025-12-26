@@ -127,29 +127,37 @@ baselineForm.addEventListener('submit', async (e) => {
         return;
     }
     
+    // Show loading
+    showMessage(baselineMessage, 'info', '⏳ Uploading...');
+    
     const formData = new FormData();
     formData.append('file', file);
     
     try {
         const response = await fetch(
             `${API_URL}/admin/upload/baseline?kvk_season_id=${seasonId}`,
-            { method: 'POST', body: formData }
+            { 
+                method: 'POST', 
+                body: formData,
+                mode: 'cors'  // Add this
+            }
         );
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Upload failed');
+        }
         
         const result = await response.json();
         
-        if (response.ok) {
-            showMessage(baselineMessage, 'success', `
-                ✅ Baseline uploaded successfully!<br>
-                <strong>Players:</strong> ${result.player_count}<br>
-                <strong>Season:</strong> ${result.kvk_season_id}
-            `);
-            document.getElementById('baseline-file').value = '';
-            loadDataStatus();
-            loadHistory();
-        } else {
-            showMessage(baselineMessage, 'error', `❌ ${result.detail}`);
-        }
+        showMessage(baselineMessage, 'success', `
+            ✅ Baseline uploaded successfully!<br>
+            <strong>Players:</strong> ${result.player_count}<br>
+            <strong>Season:</strong> ${result.kvk_season_id}
+        `);
+        document.getElementById('baseline-file').value = '';
+        loadDataStatus();
+        loadHistory();
         
     } catch (error) {
         showMessage(baselineMessage, 'error', `❌ Upload failed: ${error.message}`);
@@ -171,30 +179,38 @@ currentForm.addEventListener('submit', async (e) => {
         return;
     }
     
+    // Show loading
+    showMessage(currentMessage, 'info', '⏳ Uploading...');
+    
     const formData = new FormData();
     formData.append('file', file);
     
     try {
         const response = await fetch(
             `${API_URL}/admin/upload/current?kvk_season_id=${seasonId}&description=${encodeURIComponent(description)}`,
-            { method: 'POST', body: formData }
+            { 
+                method: 'POST', 
+                body: formData,
+                mode: 'cors'  // Add this
+            }
         );
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Upload failed');
+        }
         
         const result = await response.json();
         
-        if (response.ok) {
-            showMessage(currentMessage, 'success', `
-                ✅ Current data uploaded successfully!<br>
-                <strong>Players:</strong> ${result.player_count}<br>
-                <strong>Description:</strong> ${result.description || 'N/A'}
-            `);
-            document.getElementById('current-file').value = '';
-            document.getElementById('description').value = '';
-            loadDataStatus();
-            loadHistory();
-        } else {
-            showMessage(currentMessage, 'error', `❌ ${result.detail}`);
-        }
+        showMessage(currentMessage, 'success', `
+            ✅ Current data uploaded successfully!<br>
+            <strong>Players:</strong> ${result.player_count}<br>
+            <strong>Description:</strong> ${result.description || 'N/A'}
+        `);
+        document.getElementById('current-file').value = '';
+        document.getElementById('description').value = '';
+        loadDataStatus();
+        loadHistory();
         
     } catch (error) {
         showMessage(currentMessage, 'error', `❌ Upload failed: ${error.message}`);

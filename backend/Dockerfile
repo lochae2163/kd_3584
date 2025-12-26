@@ -12,5 +12,5 @@ COPY . .
 # Expose is optional (mostly for documentation)
 EXPOSE 8000
 
-# Use shell form OR exec form with sh -c to allow environment variable expansion
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port $PORT"]
+# Use Python to run - this will use your __main__ block
+CMD ["python", "-m", "app.main"]

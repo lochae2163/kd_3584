@@ -6,11 +6,14 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     ? 'http://localhost:8000'
     : 'https://kd3584-production.up.railway.app';
 const KVK_SEASON_ID = 'season_1';
+const PLAYERS_PER_PAGE = 50;
 
 // ========================================
 // State
 // ========================================
 let allPlayers = [];
+let currentPage = 1;
+let filteredPlayers = [];
 
 // ========================================
 // DOM Elements
@@ -192,9 +195,11 @@ async function loadLeaderboard(sortBy = 'kill_points') {
 }
 
 /**
- * Render leaderboard table
+ * Render leaderboard table with pagination
  */
 function renderLeaderboard(players) {
+    filteredPlayers = players;
+
     if (players.length === 0) {
         leaderboardBody.innerHTML = `
             <tr>
@@ -204,14 +209,29 @@ function renderLeaderboard(players) {
                 </td>
             </tr>
         `;
+        document.getElementById('pagination').style.display = 'none';
         return;
     }
-    
-    leaderboardBody.innerHTML = players.map(player => {
+
+    // Calculate pagination
+    const totalPages = Math.ceil(players.length / PLAYERS_PER_PAGE);
+    const startIndex = (currentPage - 1) * PLAYERS_PER_PAGE;
+    const endIndex = startIndex + PLAYERS_PER_PAGE;
+    const playersToShow = players.slice(startIndex, endIndex);
+
+    // Show pagination if more than one page
+    if (totalPages > 1) {
+        document.getElementById('pagination').style.display = 'flex';
+        updatePaginationControls(totalPages);
+    } else {
+        document.getElementById('pagination').style.display = 'none';
+    }
+
+    leaderboardBody.innerHTML = playersToShow.map(player => {
         // Rank display
         let rankDisplay = '';
         let rowClass = '';
-        
+
         switch (player.rank) {
             case 1:
                 rankDisplay = '<span class="rank-badge">🥇</span>';
@@ -228,10 +248,10 @@ function renderLeaderboard(players) {
             default:
                 rankDisplay = `<span class="rank-number">#${player.rank}</span>`;
         }
-        
+
         const stats = player.stats || {};
         const delta = player.delta || {};
-        
+
         return `
             <tr class="${rowClass}" onclick="window.location.href='player.html?id=${player.governor_id}'">
                 <td>${rankDisplay}</td>
@@ -260,6 +280,41 @@ function renderLeaderboard(players) {
 }
 
 /**
+ * Update pagination controls
+ */
+function updatePaginationControls(totalPages) {
+    const pageInfo = document.getElementById('page-info');
+    const firstBtn = document.getElementById('first-page');
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    const lastBtn = document.getElementById('last-page');
+
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+
+    // Disable/enable buttons
+    firstBtn.disabled = currentPage === 1;
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages;
+    lastBtn.disabled = currentPage === totalPages;
+}
+
+/**
+ * Go to specific page
+ */
+function goToPage(page) {
+    const totalPages = Math.ceil(filteredPlayers.length / PLAYERS_PER_PAGE);
+
+    if (page < 1) page = 1;
+    if (page > totalPages) page = totalPages;
+
+    currentPage = page;
+    renderLeaderboard(filteredPlayers);
+
+    // Scroll to top of leaderboard
+    document.querySelector('.leaderboard').scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
  * Filter players by search term
  */
 function filterPlayers(searchTerm) {
@@ -267,6 +322,7 @@ function filterPlayers(searchTerm) {
         player.governor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         player.governor_id.includes(searchTerm)
     );
+    currentPage = 1; // Reset to first page when searching
     renderLeaderboard(filtered);
 }
 
@@ -274,12 +330,21 @@ function filterPlayers(searchTerm) {
 // Event Listeners
 // ========================================
 searchInput.addEventListener('input', (e) => filterPlayers(e.target.value));
-sortSelect.addEventListener('change', (e) => loadLeaderboard(e.target.value));
+sortSelect.addEventListener('change', (e) => {
+    currentPage = 1; // Reset to first page when sorting
+    loadLeaderboard(e.target.value);
+});
 
-// ========================================
-// Initialize
-// ========================================
+// Pagination button listeners
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('first-page').addEventListener('click', () => goToPage(1));
+    document.getElementById('prev-page').addEventListener('click', () => goToPage(currentPage - 1));
+    document.getElementById('next-page').addEventListener('click', () => goToPage(currentPage + 1));
+    document.getElementById('last-page').addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredPlayers.length / PLAYERS_PER_PAGE);
+        goToPage(totalPages);
+    });
+
     loadStats();
     loadLeaderboard();
 });

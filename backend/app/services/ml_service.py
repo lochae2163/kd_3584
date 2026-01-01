@@ -21,8 +21,8 @@ class MLService:
         self.model = kvk_model
     
     async def process_and_save_baseline(
-        self, 
-        csv_content: str, 
+        self,
+        csv_content: str,
         kvk_season_id: str,
         file_name: str
     ) -> Dict:
@@ -31,10 +31,10 @@ class MLService:
         """
         # Process through ML model
         result = self.model.process_csv(csv_content)
-        
+
         if not result['success']:
             return result
-        
+
         # Create baseline document
         baseline_doc = {
             "type": "baseline",
@@ -45,16 +45,16 @@ class MLService:
             "players": result['players'],
             "processing_stats": result['processing_stats']
         }
-        
+
         # Save to database (replace existing baseline for this season)
         collection = Database.get_collection("baselines")
-        
+
         # Delete existing baseline for this season
         await collection.delete_many({"kvk_season_id": kvk_season_id})
-        
+
         # Insert new baseline
         insert_result = await collection.insert_one(baseline_doc)
-        
+
         return {
             "success": True,
             "message": f"Baseline saved with {result['player_count']} players",
@@ -62,10 +62,55 @@ class MLService:
             "kvk_season_id": kvk_season_id,
             "mongo_id": str(insert_result.inserted_id)
         }
+
+    async def process_and_save_baseline_excel(
+        self,
+        excel_bytes: bytes,
+        kvk_season_id: str,
+        file_name: str,
+        kingdom_id: str = "3584"
+    ) -> Dict:
+        """
+        Process baseline Excel file and save to database.
+        """
+        # Process through ML model
+        result = self.model.process_excel(excel_bytes, kingdom_id)
+
+        if not result['success']:
+            return result
+
+        # Create baseline document
+        baseline_doc = {
+            "type": "baseline",
+            "kvk_season_id": kvk_season_id,
+            "file_name": file_name,
+            "timestamp": datetime.utcnow(),
+            "player_count": result['player_count'],
+            "players": result['players'],
+            "processing_stats": result['processing_stats']
+        }
+
+        # Save to database (replace existing baseline for this season)
+        collection = Database.get_collection("baselines")
+
+        # Delete existing baseline for this season
+        await collection.delete_many({"kvk_season_id": kvk_season_id})
+
+        # Insert new baseline
+        insert_result = await collection.insert_one(baseline_doc)
+
+        return {
+            "success": True,
+            "message": f"Baseline saved with {result['player_count']} players from Excel",
+            "player_count": result['player_count'],
+            "kvk_season_id": kvk_season_id,
+            "mongo_id": str(insert_result.inserted_id),
+            "sheet_used": result['processing_stats'].get('sheet_used')
+        }
     
     async def process_and_save_current(
-        self, 
-        csv_content: str, 
+        self,
+        csv_content: str,
         kvk_season_id: str,
         file_name: str,
         description: str = ""
@@ -75,34 +120,34 @@ class MLService:
         """
         # Process through ML model
         result = self.model.process_csv(csv_content)
-        
+
         if not result['success']:
             return result
-        
+
         # Get baseline for this season
         baselines = Database.get_collection("baselines")
         baseline = await baselines.find_one({"kvk_season_id": kvk_season_id})
-        
+
         if not baseline:
             return {
                 "success": False,
                 "error": f"No baseline found for season {kvk_season_id}. Please upload baseline first."
             }
-        
+
         # Calculate deltas
         players_with_deltas = self.model.calculate_all_deltas(
             baseline.get('players', []),
             result['players']
         )
-        
+
         # Rank players by kill_points
         ranked_players = self.model.rank_players(players_with_deltas, "kill_points")
-        
+
         # Calculate summary
         summary = self.model.calculate_summary_stats(result['players'])
-        
+
         timestamp = datetime.utcnow()
-        
+
         # Create current data document
         current_doc = {
             "type": "current",
@@ -115,12 +160,12 @@ class MLService:
             "summary": summary,
             "processing_stats": result['processing_stats']
         }
-        
+
         # Save to current_data (replace existing)
         current_collection = Database.get_collection("current_data")
         await current_collection.delete_many({"kvk_season_id": kvk_season_id})
         await current_collection.insert_one(current_doc)
-        
+
         # Also save to history (append, don't replace)
         history_doc = {
             "kvk_season_id": kvk_season_id,
@@ -130,10 +175,10 @@ class MLService:
             "player_count": result['player_count'],
             "summary": summary
         }
-        
+
         history_collection = Database.get_collection("upload_history")
         await history_collection.insert_one(history_doc)
-        
+
         return {
             "success": True,
             "message": f"Current data saved with {result['player_count']} players",
@@ -141,6 +186,88 @@ class MLService:
             "kvk_season_id": kvk_season_id,
             "description": description,
             "summary": summary
+        }
+
+    async def process_and_save_current_excel(
+        self,
+        excel_bytes: bytes,
+        kvk_season_id: str,
+        file_name: str,
+        description: str = "",
+        kingdom_id: str = "3584"
+    ) -> Dict:
+        """
+        Process current data Excel file, calculate deltas, save, and add to history.
+        """
+        # Process through ML model
+        result = self.model.process_excel(excel_bytes, kingdom_id)
+
+        if not result['success']:
+            return result
+
+        # Get baseline for this season
+        baselines = Database.get_collection("baselines")
+        baseline = await baselines.find_one({"kvk_season_id": kvk_season_id})
+
+        if not baseline:
+            return {
+                "success": False,
+                "error": f"No baseline found for season {kvk_season_id}. Please upload baseline first."
+            }
+
+        # Calculate deltas
+        players_with_deltas = self.model.calculate_all_deltas(
+            baseline.get('players', []),
+            result['players']
+        )
+
+        # Rank players by kill_points
+        ranked_players = self.model.rank_players(players_with_deltas, "kill_points")
+
+        # Calculate summary
+        summary = self.model.calculate_summary_stats(result['players'])
+
+        timestamp = datetime.utcnow()
+
+        # Create current data document
+        current_doc = {
+            "type": "current",
+            "kvk_season_id": kvk_season_id,
+            "file_name": file_name,
+            "description": description,
+            "timestamp": timestamp,
+            "player_count": result['player_count'],
+            "players": ranked_players,
+            "summary": summary,
+            "processing_stats": result['processing_stats']
+        }
+
+        # Save to current_data (replace existing)
+        current_collection = Database.get_collection("current_data")
+        await current_collection.delete_many({"kvk_season_id": kvk_season_id})
+        await current_collection.insert_one(current_doc)
+
+        # Also save to history (append, don't replace)
+        history_doc = {
+            "kvk_season_id": kvk_season_id,
+            "file_name": file_name,
+            "description": description,
+            "timestamp": timestamp,
+            "player_count": result['player_count'],
+            "summary": summary
+        }
+
+        history_collection = Database.get_collection("upload_history")
+        await history_collection.insert_one(history_doc)
+
+        return {
+            "success": True,
+            "message": f"Current data saved with {result['player_count']} players from Excel",
+            "player_count": result['player_count'],
+            "kvk_season_id": kvk_season_id,
+            "description": description,
+            "summary": summary,
+            "sheet_used": result['processing_stats'].get('sheet_used')
         }
     
     async def get_leaderboard(

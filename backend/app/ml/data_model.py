@@ -15,7 +15,7 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime
-from io import StringIO
+from io import StringIO, BytesIO
 from dataclasses import dataclass
 import logging
 
@@ -207,39 +207,39 @@ class KvKDataModel:
     def process_csv(self, csv_content: str) -> Dict:
         """
         Process CSV content through the ML pipeline.
-        
+
         Pipeline:
         1. Validate CSV structure
         2. Clean data
         3. Calculate statistics
         4. Return processed data
-        
+
         Args:
             csv_content: Raw CSV string
-            
+
         Returns:
             Dict with processed data and metadata
         """
         # Validate
         is_valid, message, df = self.validate_csv(csv_content)
-        
+
         if not is_valid:
             return {
                 "success": False,
                 "error": message,
                 "data": None
             }
-        
+
         # Clean data
         df_cleaned = self.clean_dataframe(df)
-        
+
         # Calculate processing stats
         self.processing_stats = {
             "rows_processed": len(df_cleaned),
             "columns": list(df_cleaned.columns),
             "timestamp": datetime.utcnow().isoformat()
         }
-        
+
         # Convert to list of dicts for API response
         players = []
         for _, row in df_cleaned.iterrows():
@@ -254,7 +254,7 @@ class KvKDataModel:
                     "t5_kills": int(row['t5_kills'])
                 }
             })
-        
+
         return {
             "success": True,
             "message": f"Successfully processed {len(players)} players",
@@ -262,6 +262,149 @@ class KvKDataModel:
             "players": players,
             "processing_stats": self.processing_stats
         }
+
+    def process_excel(self, excel_bytes: bytes, kingdom_id: str = "3584") -> Dict:
+        """
+        Process Excel file from Hero Scrolls Kingdom Scanner.
+
+        This method:
+        1. Auto-detects the correct sheet (kingdom_id or "Rolled Up {kingdom_id}")
+        2. Maps Excel columns to required CSV format
+        3. Cleans and validates data
+        4. Returns processed player data
+
+        Args:
+            excel_bytes: Raw Excel file bytes
+            kingdom_id: Kingdom number to look for (default "3584")
+
+        Returns:
+            Dict with processed data and metadata
+        """
+        try:
+            # Read Excel file
+            excel_file = BytesIO(excel_bytes)
+
+            # Get all sheet names
+            xls = pd.ExcelFile(excel_file)
+            sheet_names = xls.sheet_names
+
+            logger.info(f"Found sheets: {sheet_names}")
+
+            # Auto-detect correct sheet
+            # Priority: exact match > "Rolled Up" > first sheet with kingdom_id in name
+            target_sheet = None
+
+            # 1. Try exact match
+            if kingdom_id in sheet_names:
+                target_sheet = kingdom_id
+            # 2. Try "Rolled Up {kingdom_id}"
+            elif f"Rolled Up {kingdom_id}" in sheet_names:
+                target_sheet = f"Rolled Up {kingdom_id}"
+            # 3. Try any sheet containing kingdom_id
+            else:
+                for sheet in sheet_names:
+                    if kingdom_id in sheet:
+                        target_sheet = sheet
+                        break
+
+            # 4. Default to first non-summary sheet
+            if not target_sheet:
+                for sheet in sheet_names:
+                    if sheet.lower() not in ['summary', 'top 10s', 'top10s']:
+                        target_sheet = sheet
+                        break
+
+            if not target_sheet:
+                return {
+                    "success": False,
+                    "error": f"Could not find data sheet for kingdom {kingdom_id}. Available sheets: {sheet_names}",
+                    "data": None
+                }
+
+            logger.info(f"Using sheet: {target_sheet}")
+
+            # Read the target sheet
+            df = pd.read_excel(excel_file, sheet_name=target_sheet)
+
+            # Check if empty
+            if df.empty:
+                return {
+                    "success": False,
+                    "error": f"Sheet '{target_sheet}' is empty",
+                    "data": None
+                }
+
+            # Map Excel columns to required format
+            # Hero Scrolls Excel columns (based on analysis):
+            column_mapping = {
+                'Governor ID': 'governor_id',
+                'Governor Name': 'governor_name',
+                'Power': 'power',
+                'Deads': 'deads',
+                'Kill Points': 'kill_points',
+                'T4 Kills': 't4_kills',
+                'T5 Kills': 't5_kills'
+            }
+
+            # Rename columns
+            df = df.rename(columns=column_mapping)
+
+            # Clean column names (strip whitespace, lowercase)
+            df.columns = df.columns.str.strip().str.lower()
+
+            # Check required columns exist
+            missing_cols = set(self.REQUIRED_COLUMNS) - set(df.columns)
+            if missing_cols:
+                return {
+                    "success": False,
+                    "error": f"Missing required columns after mapping: {missing_cols}. Available columns: {list(df.columns)}",
+                    "data": None
+                }
+
+            # Keep only required columns
+            df = df[self.REQUIRED_COLUMNS]
+
+            # Clean data
+            df_cleaned = self.clean_dataframe(df)
+
+            # Calculate processing stats
+            self.processing_stats = {
+                "rows_processed": len(df_cleaned),
+                "columns": list(df_cleaned.columns),
+                "sheet_used": target_sheet,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+
+            # Convert to list of dicts for API response
+            players = []
+            for _, row in df_cleaned.iterrows():
+                players.append({
+                    "governor_id": str(row['governor_id']),
+                    "governor_name": str(row['governor_name']),
+                    "stats": {
+                        "power": int(row['power']),
+                        "kill_points": int(row['kill_points']),
+                        "deads": int(row['deads']),
+                        "t4_kills": int(row['t4_kills']),
+                        "t5_kills": int(row['t5_kills'])
+                    }
+                })
+
+            return {
+                "success": True,
+                "message": f"Successfully processed {len(players)} players from sheet '{target_sheet}'",
+                "player_count": len(players),
+                "players": players,
+                "processing_stats": self.processing_stats
+            }
+
+        except Exception as e:
+            logger.error(f"Excel processing failed: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Failed to process Excel file: {str(e)}",
+                "data": None
+            }
     
     # ==========================================
     # Delta Calculation Methods

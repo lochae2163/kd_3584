@@ -171,10 +171,10 @@ async function loadStats() {
 // ========================================
 async function loadLeaderboard(sortBy = 'kill_points') {
     leaderboardBody.innerHTML = '<tr><td colspan="7" class="loading">Loading leaderboard...</td></tr>';
-    
+
     try {
         const response = await fetch(
-            `${API_URL}/api/leaderboard?kvk_season_id=${KVK_SEASON_ID}&sort_by=${sortBy}&limit=100`
+            `${API_URL}/api/leaderboard?kvk_season_id=${KVK_SEASON_ID}&sort_by=${sortBy}&limit=500`
         );
         
         if (!response.ok) throw new Error('Failed to fetch leaderboard');

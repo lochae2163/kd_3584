@@ -1,7 +1,10 @@
 // ========================================
 // Configuration
 // ========================================
-const API_URL = 'https://kd3584-production.up.railway.app/';
+// Use localhost for development, production URL for deployed site
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : 'https://kd3584-production.up.railway.app';
 const KVK_SEASON_ID = 'season_1';
 
 // ========================================

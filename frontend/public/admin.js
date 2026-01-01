@@ -1,7 +1,10 @@
 // ========================================
 // Configuration
 // ========================================
-const API_URL = 'https://kd3584-production.up.railway.app';
+// Use localhost for development, production URL for deployed site
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8000'
+    : 'https://kd3584-production.up.railway.app';
 
 // ========================================
 // DOM Elements
@@ -35,11 +38,11 @@ function formatNumber(num) {
 // ========================================
 async function loadDataStatus() {
     const seasonId = document.getElementById('baseline-season').value || 'season_1';
-    
+
     try {
         const response = await fetch(`${API_URL}/admin/data-status/${seasonId}`);
         const data = await response.json();
-        
+
         let html = `
             <div class="status-grid">
                 <div class="status-card ${data.has_baseline ? 'active' : 'inactive'}">
@@ -48,6 +51,7 @@ async function loadDataStatus() {
                         <p><strong>File:</strong> ${data.baseline_info.file_name}</p>
                         <p><strong>Players:</strong> ${data.baseline_info.player_count}</p>
                         <p><strong>Uploaded:</strong> ${formatDate(data.baseline_info.timestamp)}</p>
+                        <button class="delete-btn" onclick="deleteBaseline()">🗑️ Delete Baseline</button>
                     ` : `
                         <p>No baseline uploaded yet</p>
                     `}
@@ -59,15 +63,23 @@ async function loadDataStatus() {
                         <p><strong>Players:</strong> ${data.current_info.player_count}</p>
                         <p><strong>Description:</strong> ${data.current_info.description || 'N/A'}</p>
                         <p><strong>Updated:</strong> ${formatDate(data.current_info.timestamp)}</p>
+                        <button class="delete-btn" onclick="deleteCurrent()">🗑️ Delete Current Data</button>
                     ` : `
                         <p>No current data uploaded yet</p>
                     `}
                 </div>
             </div>
+            ${data.has_baseline || data.has_current ? `
+                <div class="danger-zone">
+                    <h4>⚠️ Danger Zone</h4>
+                    <p>Delete ALL data for this season (baseline + current + history). This cannot be undone!</p>
+                    <button class="delete-all-btn" onclick="deleteAllData()">💥 Delete All Data</button>
+                </div>
+            ` : ''}
         `;
-        
+
         dataStatus.innerHTML = html;
-        
+
     } catch (error) {
         dataStatus.innerHTML = `<div class="message error">Failed to load status: ${error.message}</div>`;
     }
@@ -230,6 +242,139 @@ document.getElementById('current-season').addEventListener('change', (e) => {
     loadDataStatus();
     loadHistory();
 });
+
+// ========================================
+// Delete Functions
+// ========================================
+async function deleteBaseline() {
+    const seasonId = document.getElementById('baseline-season').value || 'season_1';
+
+    const confirmed = confirm(
+        '⚠️ WARNING: Delete Baseline?\n\n' +
+        'This will remove the baseline reference point.\n' +
+        'Current data comparisons will fail without a baseline.\n\n' +
+        'Are you sure you want to delete the baseline?'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(
+            `${API_URL}/admin/delete/baseline/${seasonId}`,
+            { method: 'DELETE' }
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Delete failed');
+        }
+
+        const result = await response.json();
+
+        alert(`✅ ${result.message}\n\nDeleted file: ${result.deleted_file}\nPlayers: ${result.deleted_player_count}`);
+
+        loadDataStatus();
+        loadHistory();
+
+    } catch (error) {
+        alert(`❌ Delete failed: ${error.message}`);
+    }
+}
+
+async function deleteCurrent() {
+    const seasonId = document.getElementById('baseline-season').value || 'season_1';
+
+    const confirmed = confirm(
+        '⚠️ WARNING: Delete Current Data?\n\n' +
+        'This will remove:\n' +
+        '• Current data snapshot\n' +
+        '• All upload history entries\n\n' +
+        'Baseline will remain intact.\n\n' +
+        'Are you sure you want to delete?'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(
+            `${API_URL}/admin/delete/current/${seasonId}`,
+            { method: 'DELETE' }
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Delete failed');
+        }
+
+        const result = await response.json();
+
+        alert(
+            `✅ ${result.message}\n\n` +
+            `Deleted file: ${result.deleted_file}\n` +
+            `History entries removed: ${result.deleted_history_count}`
+        );
+
+        loadDataStatus();
+        loadHistory();
+
+    } catch (error) {
+        alert(`❌ Delete failed: ${error.message}`);
+    }
+}
+
+async function deleteAllData() {
+    const seasonId = document.getElementById('baseline-season').value || 'season_1';
+
+    const firstConfirm = confirm(
+        '🚨 DANGER: Delete ALL Data?\n\n' +
+        'This will PERMANENTLY delete:\n' +
+        '• Baseline data\n' +
+        '• Current data\n' +
+        '• All upload history\n\n' +
+        'This action CANNOT be undone!\n\n' +
+        'Are you absolutely sure?'
+    );
+
+    if (!firstConfirm) return;
+
+    // Second confirmation for extra safety
+    const secondConfirm = confirm(
+        `🚨 FINAL WARNING!\n\n` +
+        `You are about to delete ALL data for ${seasonId}.\n\n` +
+        `Type the season ID in your mind to confirm: ${seasonId}\n\n` +
+        `Click OK to proceed with PERMANENT deletion.`
+    );
+
+    if (!secondConfirm) return;
+
+    try {
+        const response = await fetch(
+            `${API_URL}/admin/delete/all/${seasonId}`,
+            { method: 'DELETE' }
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Delete failed');
+        }
+
+        const result = await response.json();
+
+        alert(
+            `✅ ${result.message}\n\n` +
+            `Baseline deleted: ${result.deleted_baseline}\n` +
+            `Current deleted: ${result.deleted_current}\n` +
+            `History deleted: ${result.deleted_history}\n` +
+            `Total records removed: ${result.total_deleted}`
+        );
+
+        loadDataStatus();
+        loadHistory();
+
+    } catch (error) {
+        alert(`❌ Delete failed: ${error.message}`);
+    }
+}
 
 // ========================================
 // Initialize

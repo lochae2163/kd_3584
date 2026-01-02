@@ -12,8 +12,8 @@ async def get_leaderboard(
 ):
     """
     Get leaderboard with deltas from baseline.
-    
-    - sort_by: kill_points, power, t5_kills, t4_kills, deads
+
+    - sort_by: kill_points_gained, deads_gained, kill_points, power, t5_kills, t4_kills, deads
     - limit: max number of players to return
     """
     result = await ml_service.get_leaderboard(

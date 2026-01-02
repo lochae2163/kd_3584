@@ -172,8 +172,8 @@ async function loadStats() {
 // ========================================
 // Load Leaderboard
 // ========================================
-async function loadLeaderboard(sortBy = 'kill_points') {
-    leaderboardBody.innerHTML = '<tr><td colspan="7" class="loading">Loading leaderboard...</td></tr>';
+async function loadLeaderboard(sortBy = 'kill_points_gained') {
+    leaderboardBody.innerHTML = '<tr><td colspan="9" class="loading">Loading leaderboard...</td></tr>';
 
     try {
         const response = await fetch(
@@ -190,7 +190,7 @@ async function loadLeaderboard(sortBy = 'kill_points') {
         
     } catch (error) {
         console.error('Failed to load leaderboard:', error);
-        leaderboardBody.innerHTML = '<tr><td colspan="7" class="loading">⚠️ No data available</td></tr>';
+        leaderboardBody.innerHTML = '<tr><td colspan="9" class="loading">⚠️ No data available</td></tr>';
     }
 }
 
@@ -203,7 +203,7 @@ function renderLeaderboard(players) {
     if (players.length === 0) {
         leaderboardBody.innerHTML = `
             <tr>
-                <td colspan="7" class="empty-state">
+                <td colspan="9" class="empty-state">
                     <div class="icon">📊</div>
                     <p>No data available</p>
                 </td>
@@ -258,6 +258,16 @@ function renderLeaderboard(players) {
                 <td>
                     <div class="player-name">${player.governor_name}</div>
                     <div class="player-id">ID: ${player.governor_id}</div>
+                </td>
+                <td class="text-right">
+                    <div class="stat-cell">
+                        <span class="stat-value gained-stat">${formatFullNumber(delta.kill_points || 0)}</span>
+                    </div>
+                </td>
+                <td class="text-right">
+                    <div class="stat-cell">
+                        <span class="stat-value gained-stat">${formatFullNumber(delta.deads || 0)}</span>
+                    </div>
                 </td>
                 <td class="text-right">
                     ${createStatCell(stats.power, delta.power)}

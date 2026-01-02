@@ -526,36 +526,47 @@ class KvKDataModel:
         return summary
     
     def rank_players(
-        self, 
-        players: List[Dict], 
+        self,
+        players: List[Dict],
         sort_by: str = "kill_points",
         ascending: bool = False
     ) -> List[Dict]:
         """
         Rank players by a specific stat.
-        
+
         Args:
             players: List of player dicts
-            sort_by: Field to sort by
+            sort_by: Field to sort by (supports both stats and delta fields)
             ascending: Sort order
-            
+
         Returns:
             List of player dicts with rank added
         """
         if not players:
             return []
-        
-        # Sort players
-        sorted_players = sorted(
-            players,
-            key=lambda p: p.get('stats', {}).get(sort_by, 0),
-            reverse=not ascending
-        )
-        
+
+        # Determine if sorting by delta (gained) fields
+        # Fields ending in _gained are from delta object
+        if sort_by.endswith('_gained'):
+            # Extract the base field name (e.g., kill_points_gained -> kill_points)
+            base_field = sort_by.replace('_gained', '')
+            sorted_players = sorted(
+                players,
+                key=lambda p: p.get('delta', {}).get(base_field, 0),
+                reverse=not ascending
+            )
+        else:
+            # Sort by stats field
+            sorted_players = sorted(
+                players,
+                key=lambda p: p.get('stats', {}).get(sort_by, 0),
+                reverse=not ascending
+            )
+
         # Add rank
         for i, player in enumerate(sorted_players, 1):
             player['rank'] = i
-        
+
         return sorted_players
 
 

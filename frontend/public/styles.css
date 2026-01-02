@@ -1221,3 +1221,10 @@ tbody tr:hover {
         margin: 5px 0;
     }
 }
+
+/* Gained Stats Styling */
+.gained-stat {
+    color: #10b981 !important;
+    font-weight: 600 !important;
+    font-size: 1rem;
+}

@@ -46,6 +46,8 @@
                         placeholder="🔍 Search player..."
                     >
                     <select class="sort-select" id="sort-by">
+                        <option value="kill_points_gained">Sort: Kill Points Gained</option>
+                        <option value="deads_gained">Sort: Deaths Gained</option>
                         <option value="kill_points">Sort: Kill Points</option>
                         <option value="power">Sort: Power</option>
                         <option value="t5_kills">Sort: T5 Kills</option>
@@ -61,6 +63,8 @@
                         <tr>
                             <th>Rank</th>
                             <th>Governor</th>
+                            <th class="text-right">Kill Points Gained</th>
+                            <th class="text-right">Deaths Gained</th>
                             <th class="text-right">Power</th>
                             <th class="text-right">Kill Points</th>
                             <th class="text-right">T5 Kills</th>
@@ -70,7 +74,7 @@
                     </thead>
                     <tbody id="leaderboard-body">
                         <tr>
-                            <td colspan="7" class="loading">Loading leaderboard...</td>
+                            <td colspan="9" class="loading">Loading leaderboard...</td>
                         </tr>
                     </tbody>
                 </table>

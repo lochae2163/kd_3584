@@ -460,7 +460,7 @@ class KvKBot(commands.Cog):
 
         embed.add_field(
             name="🔗 Web Dashboard",
-            value="[View Full Leaderboard](https://kd3584-production.up.railway.app/index.html)",
+            value="[View Full Leaderboard](https://kd-3584.vercel.app)",
             inline=False
         )
 

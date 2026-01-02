@@ -184,7 +184,7 @@ Shows all commands with descriptions and examples.
 
 ## 🔗 Useful Links
 
-- **Admin Panel:** https://kd3584-production.up.railway.app/admin.html
+- **Leaderboard:** https://kd-3584.vercel.app
 - **API Status:** https://kd3584-production.up.railway.app/
 - **Bot Source Code:** Check project repository
 - **Support:** Contact server admins

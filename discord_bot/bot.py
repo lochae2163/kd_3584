@@ -150,7 +150,9 @@ class KvKBot(commands.Cog):
                     return
 
                 data = await response.json()
-                embed = self.create_player_embed(data)
+                # Extract player data from response
+                player_data = data.get('player', data)
+                embed = self.create_player_embed(player_data)
                 await interaction.followup.send(embed=embed)
 
         except Exception as e:
@@ -364,7 +366,8 @@ class KvKBot(commands.Cog):
                         ephemeral=True
                     )
                     return
-                player1 = await response1.json()
+                data1 = await response1.json()
+                player1 = data1.get('player', data1)
 
             async with self.session.get(url2) as response2:
                 if response2.status != 200:
@@ -373,7 +376,8 @@ class KvKBot(commands.Cog):
                         ephemeral=True
                     )
                     return
-                player2 = await response2.json()
+                data2 = await response2.json()
+                player2 = data2.get('player', data2)
 
             # Create comparison embed
             embed = discord.Embed(

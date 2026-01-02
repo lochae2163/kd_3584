@@ -57,6 +57,32 @@ class KvKBot(commands.Cog):
             return f"{num / 1_000:.2f}K"
         return str(num)
 
+    def format_delta(self, value, reverse=False):
+        """Format delta value with color indicators
+
+        Args:
+            value: The delta value to format
+            reverse: If True, negative is good (green), positive is bad (red). For deaths.
+        """
+        if value == 0:
+            return f"{self.format_number(value)}"
+        elif value > 0:
+            # Positive change
+            if reverse:
+                # For deaths: positive is bad (red)
+                return f"🔴 +{self.format_number(value)}"
+            else:
+                # For KP, Power, Kills: positive is good (green)
+                return f"🟢 +{self.format_number(value)}"
+        else:
+            # Negative change
+            if reverse:
+                # For deaths: negative is good (green)
+                return f"🟢 {self.format_number(value)}"
+            else:
+                # For KP, Power, Kills: negative is bad (red)
+                return f"🔴 {self.format_number(value)}"
+
     def create_player_embed(self, player_data):
         """Create rich embed for player stats"""
         stats = player_data.get('stats', {})
@@ -80,44 +106,34 @@ class KvKBot(commands.Cog):
             timestamp=datetime.utcnow()
         )
 
-        # Current Stats
+        # Current Stats with color-coded deltas
         embed.add_field(
             name="⚔️ Kill Points",
-            value=f"**{self.format_number(stats.get('kill_points', 0))}**\n+{self.format_number(delta.get('kill_points', 0))} gained",
+            value=f"**{self.format_number(stats.get('kill_points', 0))}**\n{self.format_delta(delta.get('kill_points', 0))}",
             inline=True
         )
 
         embed.add_field(
             name="💪 Power",
-            value=f"**{self.format_number(stats.get('power', 0))}**\n+{self.format_number(delta.get('power', 0))} gained",
+            value=f"**{self.format_number(stats.get('power', 0))}**\n{self.format_delta(delta.get('power', 0))}",
             inline=True
         )
 
         embed.add_field(
             name="☠️ Deaths",
-            value=f"**{self.format_number(stats.get('deads', 0))}**\n+{self.format_number(delta.get('deads', 0))} gained",
+            value=f"**{self.format_number(stats.get('deads', 0))}**\n{self.format_delta(delta.get('deads', 0), reverse=True)}",
             inline=True
         )
 
         embed.add_field(
             name="🎯 T5 Kills",
-            value=f"**{self.format_number(stats.get('t5_kills', 0))}**\n+{self.format_number(delta.get('t5_kills', 0))} gained",
+            value=f"**{self.format_number(stats.get('t5_kills', 0))}**\n{self.format_delta(delta.get('t5_kills', 0))}",
             inline=True
         )
 
         embed.add_field(
             name="⚡ T4 Kills",
-            value=f"**{self.format_number(stats.get('t4_kills', 0))}**\n+{self.format_number(delta.get('t4_kills', 0))} gained",
-            inline=True
-        )
-
-        # Calculate KP per death ratio
-        kp = stats.get('kill_points', 0)
-        deaths = stats.get('deads', 0)
-        ratio = (kp / deaths) if deaths > 0 else kp
-        embed.add_field(
-            name="📊 KP/Death Ratio",
-            value=f"**{ratio:.2f}**",
+            value=f"**{self.format_number(stats.get('t4_kills', 0))}**\n{self.format_delta(delta.get('t4_kills', 0))}",
             inline=True
         )
 

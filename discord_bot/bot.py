@@ -1,15 +1,27 @@
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 import aiohttp
 import os
 from datetime import datetime
 from typing import Optional
+import logging
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Configuration
 API_URL = os.getenv('API_URL', 'https://kd3584-production.up.railway.app')
 KVK_SEASON_ID = os.getenv('KVK_SEASON_ID', 'season_1')
 DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+
+if not DISCORD_TOKEN:
+    logger.error("❌ DISCORD_BOT_TOKEN not set in environment variables!")
+    exit(1)
 
 # Bot setup
 intents = discord.Intents.default()

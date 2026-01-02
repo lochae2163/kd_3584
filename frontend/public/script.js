@@ -14,6 +14,7 @@ const PLAYERS_PER_PAGE = 50;
 let allPlayers = [];
 let currentPage = 1;
 let filteredPlayers = [];
+let currentSortBy = 'kill_points_gained';
 
 // ========================================
 // DOM Elements
@@ -25,6 +26,28 @@ const leaderboardBody = document.getElementById('leaderboard-body');
 const playerCount = document.getElementById('player-count');
 const searchInput = document.getElementById('search');
 const sortSelect = document.getElementById('sort-by');
+
+// ========================================
+// Column Definitions
+// ========================================
+const COLUMNS = {
+    'kill_points_gained': { label: 'Kill Points Gained', isGained: true, field: 'kill_points' },
+    'deads_gained': { label: 'Deaths Gained', isGained: true, field: 'deads' },
+    'power': { label: 'Power', isGained: false, field: 'power' },
+    'kill_points': { label: 'Kill Points', isGained: false, field: 'kill_points' },
+    't5_kills': { label: 'T5 Kills', isGained: false, field: 't5_kills' },
+    't4_kills': { label: 'T4 Kills', isGained: false, field: 't4_kills' },
+    'deads': { label: 'Deaths', isGained: false, field: 'deads' }
+};
+
+/**
+ * Get ordered columns based on current sort
+ */
+function getOrderedColumns(sortBy) {
+    const allColumnKeys = Object.keys(COLUMNS);
+    // Put sorted column first, then others in default order
+    return [sortBy, ...allColumnKeys.filter(key => key !== sortBy)];
+}
 
 // ========================================
 // Utility Functions
@@ -183,24 +206,72 @@ async function loadStats() {
 // Load Leaderboard
 // ========================================
 async function loadLeaderboard(sortBy = 'kill_points_gained') {
+    currentSortBy = sortBy;
     leaderboardBody.innerHTML = '<tr><td colspan="9" class="loading">Loading leaderboard...</td></tr>';
 
     try {
         const response = await fetch(
             `${API_URL}/api/leaderboard?kvk_season_id=${KVK_SEASON_ID}&sort_by=${sortBy}&limit=500`
         );
-        
+
         if (!response.ok) throw new Error('Failed to fetch leaderboard');
-        
+
         const data = await response.json();
         allPlayers = data.leaderboard || [];
-        
+
         playerCount.textContent = `${allPlayers.length} players`;
         renderLeaderboard(allPlayers);
-        
+        updateTableHeaders(sortBy);
+
     } catch (error) {
         console.error('Failed to load leaderboard:', error);
         leaderboardBody.innerHTML = '<tr><td colspan="9" class="loading">⚠️ No data available</td></tr>';
+    }
+}
+
+/**
+ * Update table headers based on current sort
+ */
+function updateTableHeaders(sortBy) {
+    const table = document.querySelector('.table-wrapper table thead tr');
+    const orderedColumns = getOrderedColumns(sortBy);
+
+    // Build header HTML
+    const headersHTML = `
+        <th>Rank</th>
+        <th>Governor</th>
+        ${orderedColumns.map(colKey => {
+            const col = COLUMNS[colKey];
+            const isSorted = colKey === sortBy;
+            const sortIndicator = isSorted ? ' 🔽' : '';
+            return `<th class="text-right ${isSorted ? 'sorted-column' : ''}">${col.label}${sortIndicator}</th>`;
+        }).join('')}
+    `;
+
+    table.innerHTML = headersHTML;
+}
+
+/**
+ * Render cell value based on column type
+ */
+function renderCellValue(colKey, player) {
+    const col = COLUMNS[colKey];
+    const stats = player.stats || {};
+    const delta = player.delta || {};
+
+    if (col.isGained) {
+        // For "gained" columns, show only the delta value in green
+        const deltaValue = delta[col.field] || 0;
+        return `
+            <div class="stat-cell">
+                <span class="stat-value gained-stat">${formatFullNumber(deltaValue)}</span>
+            </div>
+        `;
+    } else {
+        // For regular columns, show stat value with delta badge above
+        const statValue = stats[col.field] || 0;
+        const deltaValue = delta[col.field] || 0;
+        return createStatCell(statValue, deltaValue);
     }
 }
 
@@ -237,6 +308,9 @@ function renderLeaderboard(players) {
         document.getElementById('pagination').style.display = 'none';
     }
 
+    // Get column order based on current sort
+    const orderedColumns = getOrderedColumns(currentSortBy);
+
     leaderboardBody.innerHTML = playersToShow.map(player => {
         // Rank display
         let rankDisplay = '';
@@ -259,8 +333,10 @@ function renderLeaderboard(players) {
                 rankDisplay = `<span class="rank-number">#${player.rank}</span>`;
         }
 
-        const stats = player.stats || {};
-        const delta = player.delta || {};
+        // Build dynamic columns
+        const columnCells = orderedColumns.map(colKey => {
+            return `<td class="text-right">${renderCellValue(colKey, player)}</td>`;
+        }).join('');
 
         return `
             <tr class="${rowClass}" onclick="window.location.href='player.html?id=${player.governor_id}'">
@@ -269,31 +345,7 @@ function renderLeaderboard(players) {
                     <div class="player-name">${player.governor_name}</div>
                     <div class="player-id">ID: ${player.governor_id}</div>
                 </td>
-                <td class="text-right">
-                    <div class="stat-cell">
-                        <span class="stat-value gained-stat">${formatFullNumber(delta.kill_points || 0)}</span>
-                    </div>
-                </td>
-                <td class="text-right">
-                    <div class="stat-cell">
-                        <span class="stat-value gained-stat">${formatFullNumber(delta.deads || 0)}</span>
-                    </div>
-                </td>
-                <td class="text-right">
-                    ${createStatCell(stats.power, delta.power)}
-                </td>
-                <td class="text-right">
-                    ${createStatCell(stats.kill_points, delta.kill_points)}
-                </td>
-                <td class="text-right">
-                    ${createStatCell(stats.t5_kills, delta.t5_kills)}
-                </td>
-                <td class="text-right">
-                    ${createStatCell(stats.t4_kills, delta.t4_kills)}
-                </td>
-                <td class="text-right">
-                    ${createStatCell(stats.deads, delta.deads)}
-                </td>
+                ${columnCells}
             </tr>
         `;
     }).join('');

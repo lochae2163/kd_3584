@@ -369,6 +369,12 @@ th {
     z-index: 10;
 }
 
+th.sorted-column {
+    color: #10b981;
+    background-color: #1e293b;
+    font-weight: 700;
+}
+
 th.text-right,
 td.text-right {
     text-align: right;

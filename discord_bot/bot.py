@@ -488,20 +488,81 @@ class KvKBot(commands.Cog):
 
         embed = discord.Embed(
             title="📖 Kingdom 3584 KvK Tracker Bot",
-            description="Get your KvK stats directly in Discord!",
+            description="Get your KvK stats directly in Discord!\n━━━━━━━━━━━━━━━━━━━━━━━━",
             color=discord.Color.blue()
         )
 
-        commands_list = [
-            ("**/stats <governor_id>**", "Get your KvK stats\nExample: `/stats 53242709`"),
-            ("**/top [sort_by] [limit]**", "Show top players\nExample: `/top kill_points_gained 10`"),
-            ("**/summary**", "Show kingdom statistics"),
-            ("**/compare <id1> <id2>**", "Compare two players\nExample: `/compare 53242709 51540567`"),
-            ("**/help**", "Show this help message")
-        ]
+        # Stats command
+        embed.add_field(
+            name="⚔️ **/stats <governor_id>**",
+            value="View your complete KvK statistics including:\n"
+                  "• Kill Points (total and gained)\n"
+                  "• Power (total and gained)\n"
+                  "• Deaths, T5/T4 Kills\n"
+                  "• Current rank\n"
+                  "• Color-coded deltas (🟢 positive, 🔴 negative)\n\n"
+                  "**Example:** `/stats 53242709`",
+            inline=False
+        )
 
-        for cmd, desc in commands_list:
-            embed.add_field(name=cmd, value=desc, inline=False)
+        # Top command
+        embed.add_field(
+            name="🏆 **/top [sort_by] [limit]**",
+            value="Display top players leaderboard\n\n"
+                  "**Sort Options:**\n"
+                  "• `kill_points_gained` - KP gained since baseline\n"
+                  "• `deaths_gained` - Deaths gained since baseline\n"
+                  "• `power` - Total power\n"
+                  "• `kill_points` - Total kill points\n"
+                  "• `t5_kills` - Total T5 kills\n"
+                  "• `t4_kills` - Total T4 kills\n\n"
+                  "**Limit:** 1-25 players (default: 10)\n\n"
+                  "**Examples:**\n"
+                  "`/top kill_points_gained 10`\n"
+                  "`/top power 25`\n"
+                  "`/top t5_kills 15`",
+            inline=False
+        )
+
+        # Summary command
+        embed.add_field(
+            name="📊 **/summary**",
+            value="Kingdom-wide statistics overview:\n"
+                  "• Total kingdom stats\n"
+                  "• Per-player averages\n"
+                  "• Top performers in each category\n"
+                  "• Data collection period\n\n"
+                  "**Example:** `/summary`",
+            inline=False
+        )
+
+        # Compare command
+        embed.add_field(
+            name="⚔️ **/compare <player1_id> <player2_id>**",
+            value="Compare two players side-by-side:\n"
+                  "• All stats with deltas\n"
+                  "• Winner indicators for each metric\n"
+                  "• Rank comparison\n\n"
+                  "**Example:** `/compare 53242709 51540567`",
+            inline=False
+        )
+
+        # Help command
+        embed.add_field(
+            name="❓ **/help**",
+            value="Show this help message",
+            inline=False
+        )
+
+        # Additional info
+        embed.add_field(
+            name="💡 Tips",
+            value="• Find your Governor ID in-game: Tap your avatar\n"
+                  "• All deltas show change since baseline\n"
+                  "• 🟢 = positive change, 🔴 = negative change\n"
+                  "• Data updates when admin uploads new scans",
+            inline=False
+        )
 
         embed.add_field(
             name="🔗 Web Dashboard",

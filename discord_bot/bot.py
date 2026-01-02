@@ -217,6 +217,8 @@ class KvKBot(commands.Cog):
 
         try:
             url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&sort_by={sort_by}&limit={limit}"
+            logger.info(f"Fetching leaderboard with sort_by={sort_by}, limit={limit}")
+            logger.info(f"URL: {url}")
 
             async with self.session.get(url) as response:
                 if response.status != 200:
@@ -501,7 +503,7 @@ class KvKBot(commands.Cog):
                   "• Deaths, T5/T4 Kills\n"
                   "• Current rank\n"
                   "• Color-coded deltas (🟢 positive, 🔴 negative)\n\n"
-                  "**Example:** `/stats 53242709`",
+                  "**Example:** `/stats 53242709` \n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
@@ -520,7 +522,7 @@ class KvKBot(commands.Cog):
                   "**Examples:**\n"
                   "`/top kill_points_gained 10`\n"
                   "`/top power 25`\n"
-                  "`/top t5_kills 15`",
+                  "`/top t5_kills 15` \n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
@@ -532,7 +534,7 @@ class KvKBot(commands.Cog):
                   "• Per-player averages\n"
                   "• Top performers in each category\n"
                   "• Data collection period\n\n"
-                  "**Example:** `/summary`",
+                  "**Example:** `/summary`\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
@@ -543,14 +545,14 @@ class KvKBot(commands.Cog):
                   "• All stats with deltas\n"
                   "• Winner indicators for each metric\n"
                   "• Rank comparison\n\n"
-                  "**Example:** `/compare 53242709 51540567`",
+                  "**Example:** `/compare 53242709 51540567`\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
         # Help command
         embed.add_field(
             name="❓ **/help**",
-            value="Show this help message",
+            value="Show this help message\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
@@ -560,7 +562,7 @@ class KvKBot(commands.Cog):
             value="• Find your Governor ID in-game: Tap your avatar\n"
                   "• All deltas show change since baseline\n"
                   "• 🟢 = positive change, 🔴 = negative change\n"
-                  "• Data updates when admin uploads new scans",
+                  "• Data updates when admin uploads new scans\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 

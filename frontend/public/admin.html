@@ -75,8 +75,30 @@
             <div id="current-message"></div>
         </section>
 
-        <!-- Upload History -->
+        <!-- File Management -->
         <section class="admin-section">
+            <h2>📁 File Management</h2>
+            <p class="section-desc">View and manage all uploaded files. You can delete individual entries here.</p>
+
+            <!-- Baseline Files Table -->
+            <div class="file-management-section">
+                <h3>🎯 Baseline Data</h3>
+                <div id="baseline-files-table" class="files-table">
+                    <div class="loading">Loading baseline files...</div>
+                </div>
+            </div>
+
+            <!-- Current Data Files Table -->
+            <div class="file-management-section" style="margin-top: 30px;">
+                <h3>📊 Current Data / History</h3>
+                <div id="history-files-table" class="files-table">
+                    <div class="loading">Loading history files...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload History (Keep for backward compatibility) -->
+        <section class="admin-section" style="display: none;">
             <h2>📜 Upload History</h2>
             <p class="section-desc">All data uploads for this KvK season.</p>
             <div id="history-list" class="history-list">

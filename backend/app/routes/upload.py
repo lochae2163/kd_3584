@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from typing import Optional
+from bson import ObjectId
 from app.services.ml_service import ml_service
 from app.database import Database
 
@@ -273,4 +274,40 @@ async def delete_all_data(kvk_season_id: str):
         "deleted_current": current_result.deleted_count,
         "deleted_history": history_result.deleted_count,
         "total_deleted": total_deleted
+    }
+
+
+@router.delete("/delete/history/{history_id}")
+async def delete_history_entry(history_id: str):
+    """
+    Delete a specific upload history entry by its ID.
+
+    This allows selective deletion of individual uploads from history.
+    The current leaderboard will NOT be affected unless this was the most recent upload.
+    """
+    history_col = Database.get_collection("upload_history")
+
+    try:
+        # Convert string ID to ObjectId
+        obj_id = ObjectId(history_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid history ID format")
+
+    # Find the history entry first to get its info
+    history_entry = await history_col.find_one({"_id": obj_id})
+
+    if not history_entry:
+        raise HTTPException(status_code=404, detail="History entry not found")
+
+    # Delete the history entry
+    result = await history_col.delete_one({"_id": obj_id})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Failed to delete history entry")
+
+    return {
+        "success": True,
+        "message": "History entry deleted successfully",
+        "deleted_file": history_entry.get("file_name", "Unknown"),
+        "deleted_timestamp": history_entry.get("timestamp")
     }

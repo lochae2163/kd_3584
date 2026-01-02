@@ -25,7 +25,17 @@ function showMessage(element, type, message) {
 
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleString();
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+        timeZone: 'UTC',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    }) + ' UTC';
 }
 
 function formatNumber(num) {
@@ -170,6 +180,7 @@ baselineForm.addEventListener('submit', async (e) => {
         document.getElementById('baseline-file').value = '';
         loadDataStatus();
         loadHistory();
+        loadFileManagement();
         
     } catch (error) {
         showMessage(baselineMessage, 'error', `❌ Upload failed: ${error.message}`);
@@ -223,6 +234,7 @@ currentForm.addEventListener('submit', async (e) => {
         document.getElementById('description').value = '';
         loadDataStatus();
         loadHistory();
+        loadFileManagement();
         
     } catch (error) {
         showMessage(currentMessage, 'error', `❌ Upload failed: ${error.message}`);
@@ -377,9 +389,137 @@ async function deleteAllData() {
 }
 
 // ========================================
+// File Management
+// ========================================
+async function loadFileManagement() {
+    await loadBaselineFiles();
+    await loadHistoryFiles();
+}
+
+async function loadBaselineFiles() {
+    const container = document.getElementById('baseline-files-table');
+
+    try {
+        const response = await fetch(`${API_URL}/admin/data-status/season_1`);
+        const data = await response.json();
+
+        if (data.baseline_info) {
+            const baseline = data.baseline_info;
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Players</th>
+                            <th>Uploaded (UTC)</th>
+                            <th>Sheet</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>${baseline.file_name}</strong></td>
+                            <td>${baseline.player_count} players</td>
+                            <td>${formatDate(baseline.timestamp)}</td>
+                            <td>${baseline.sheet_used || 'N/A'}</td>
+                            <td>
+                                <button class="file-delete-btn" onclick="deleteBaseline()">
+                                    🗑️ Delete
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+        } else {
+            container.innerHTML = '<div class="empty-files">No baseline data uploaded yet</div>';
+        }
+    } catch (error) {
+        container.innerHTML = '<div class="empty-files">Error loading baseline files</div>';
+        console.error('Error loading baseline files:', error);
+    }
+}
+
+async function loadHistoryFiles() {
+    const container = document.getElementById('history-files-table');
+
+    try {
+        const response = await fetch(`${API_URL}/admin/history/season_1`);
+        const data = await response.json();
+
+        if (data.history && data.history.length > 0) {
+            const rows = data.history.map((item, index) => `
+                <tr>
+                    <td><strong>#${data.history.length - index}</strong></td>
+                    <td>${item.file_name}</td>
+                    <td>${item.player_count} players</td>
+                    <td>${item.description || 'No description'}</td>
+                    <td>${formatDate(item.timestamp)}</td>
+                    <td>${item.sheet_used || 'N/A'}</td>
+                    <td>
+                        <button class="file-delete-btn" onclick="deleteHistoryFile('${item._id}', '${item.file_name}')">
+                            🗑️ Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>File Name</th>
+                            <th>Players</th>
+                            <th>Description</th>
+                            <th>Uploaded (UTC)</th>
+                            <th>Sheet</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+        } else {
+            container.innerHTML = '<div class="empty-files">No current data uploaded yet</div>';
+        }
+    } catch (error) {
+        container.innerHTML = '<div class="empty-files">Error loading history files</div>';
+        console.error('Error loading history files:', error);
+    }
+}
+
+async function deleteHistoryFile(historyId, fileName) {
+    if (!confirm(`Delete "${fileName}"?\n\nThis will remove this upload from history but won't affect the current leaderboard unless this was the most recent upload.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/admin/delete/history/${historyId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`✅ File deleted successfully: ${fileName}`);
+            // Reload both tables
+            await loadFileManagement();
+        } else {
+            throw new Error(result.error || 'Delete failed');
+        }
+    } catch (error) {
+        alert(`❌ Delete failed: ${error.message}`);
+    }
+}
+
+// ========================================
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
     loadDataStatus();
     loadHistory();
+    loadFileManagement();
 });

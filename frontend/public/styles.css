@@ -24,6 +24,12 @@ body {
     padding: 20px;
 }
 
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+}
+
 /* ========================================
    Header
 ======================================== */
@@ -44,6 +50,21 @@ body {
     font-size: 1.1rem;
     color: #94a3b8;
     margin-bottom: 15px;
+}
+
+@media (max-width: 768px) {
+    .header {
+        padding: 24px 12px;
+        margin-bottom: 20px;
+    }
+
+    .header h1 {
+        font-size: 1.8rem;
+    }
+
+    .header p {
+        font-size: 0.95rem;
+    }
 }
 
 .back-link {
@@ -97,12 +118,26 @@ body {
 @media (max-width: 900px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
 }
 
 @media (max-width: 500px) {
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 16px;
+    }
+
+    .stat-card .label {
+        font-size: 0.8rem;
+    }
+
+    .stat-card .value {
+        font-size: 1.6rem;
     }
 }
 
@@ -231,6 +266,38 @@ body {
     border-color: #3b82f6;
 }
 
+@media (max-width: 768px) {
+    .leaderboard-header {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .leaderboard-title h2 {
+        font-size: 1.25rem;
+    }
+
+    .leaderboard-title p {
+        font-size: 0.8rem;
+    }
+
+    .controls {
+        width: 100%;
+        gap: 8px;
+    }
+
+    .search-input,
+    .sort-select {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 14px;
+        font-size: 0.9rem;
+    }
+
+    .search-input {
+        width: auto;
+    }
+}
+
 /* Scroll Hint */
 .scroll-hint {
     text-align: center;
@@ -241,6 +308,15 @@ body {
     background-color: rgba(100, 116, 139, 0.1);
     border-radius: 6px;
     display: none; /* Hidden by default, show with JS when needed */
+}
+
+@media (max-width: 768px) {
+    .scroll-hint {
+        font-size: 0.75rem;
+        padding: 6px;
+        margin: 0 -12px 8px -12px;
+        border-radius: 0;
+    }
 }
 
 /* Table */
@@ -311,6 +387,41 @@ tbody tr {
 
 tbody tr:hover {
     background-color: #334155;
+}
+
+@media (max-width: 768px) {
+    .table-wrapper {
+        margin: 0 -12px;
+        padding: 0 12px;
+    }
+
+    table {
+        min-width: 1000px; /* Smaller minimum on mobile for better initial view */
+    }
+
+    th {
+        padding: 10px 8px;
+        font-size: 0.65rem;
+    }
+
+    td {
+        padding: 10px 8px;
+        font-size: 0.85rem;
+    }
+
+    .player-name {
+        font-size: 0.9rem;
+    }
+
+    .player-id {
+        font-size: 0.7rem;
+    }
+
+    /* Larger touch targets for mobile */
+    tbody tr {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
+    }
 }
 
 /* Rank highlighting */
@@ -1271,4 +1382,10 @@ tbody tr:hover {
     color: #10b981 !important;
     font-weight: 600 !important;
     font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+    .gained-stat {
+        font-size: 0.85rem !important;
+    }
 }

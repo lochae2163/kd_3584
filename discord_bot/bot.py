@@ -100,40 +100,46 @@ class KvKBot(commands.Cog):
             rank_display = f"#{rank}"
 
         embed = discord.Embed(
-            title=f"{player_data['governor_name']}",
-            description=f"**Rank:** {rank_display} | **ID:** {player_data['governor_id']}",
+            title=f"📊 {player_data['governor_name']}",
+            description=f"**Rank:** {rank_display} • **Governor ID:** {player_data['governor_id']}\n━━━━━━━━━━━━━━━━━━━━━━━━",
             color=discord.Color.blue(),
             timestamp=datetime.utcnow()
         )
 
-        # Current Stats with color-coded deltas
+        # Current Stats with color-coded deltas - 2 per row for better spacing
         embed.add_field(
-            name="⚔️ Kill Points",
-            value=f"**{self.format_number(stats.get('kill_points', 0))}**\n{self.format_delta(delta.get('kill_points', 0))}",
+            name="⚔️ **Kill Points**",
+            value=f"```yaml\nTotal: {self.format_number(stats.get('kill_points', 0))}```\n{self.format_delta(delta.get('kill_points', 0))}\n",
             inline=True
         )
 
         embed.add_field(
-            name="💪 Power",
-            value=f"**{self.format_number(stats.get('power', 0))}**\n{self.format_delta(delta.get('power', 0))}",
+            name="💪 **Power**",
+            value=f"```yaml\nTotal: {self.format_number(stats.get('power', 0))}```\n{self.format_delta(delta.get('power', 0))}\n",
+            inline=True
+        )
+
+        # Empty field for spacing
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
+
+        embed.add_field(
+            name="☠️ **Deaths**",
+            value=f"```yaml\nTotal: {self.format_number(stats.get('deads', 0))}```\n{self.format_delta(delta.get('deads', 0), reverse=True)}\n",
             inline=True
         )
 
         embed.add_field(
-            name="☠️ Deaths",
-            value=f"**{self.format_number(stats.get('deads', 0))}**\n{self.format_delta(delta.get('deads', 0), reverse=True)}",
+            name="🎯 **T5 Kills**",
+            value=f"```yaml\nTotal: {self.format_number(stats.get('t5_kills', 0))}```\n{self.format_delta(delta.get('t5_kills', 0))}\n",
             inline=True
         )
 
-        embed.add_field(
-            name="🎯 T5 Kills",
-            value=f"**{self.format_number(stats.get('t5_kills', 0))}**\n{self.format_delta(delta.get('t5_kills', 0))}",
-            inline=True
-        )
+        # Empty field for spacing
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         embed.add_field(
-            name="⚡ T4 Kills",
-            value=f"**{self.format_number(stats.get('t4_kills', 0))}**\n{self.format_delta(delta.get('t4_kills', 0))}",
+            name="⚡ **T4 Kills**",
+            value=f"```yaml\nTotal: {self.format_number(stats.get('t4_kills', 0))}```\n{self.format_delta(delta.get('t4_kills', 0))}\n",
             inline=True
         )
 

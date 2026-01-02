@@ -57,31 +57,23 @@ class KvKBot(commands.Cog):
             return f"{num / 1_000:.2f}K"
         return str(num)
 
-    def format_delta(self, value, reverse=False):
+    def format_delta(self, value):
         """Format delta value with color indicators
 
         Args:
             value: The delta value to format
-            reverse: If True, negative is good (green), positive is bad (red). For deaths.
+
+        Returns:
+            Green circle for positive (+), red circle for negative (-)
         """
         if value == 0:
             return f"{self.format_number(value)}"
         elif value > 0:
-            # Positive change
-            if reverse:
-                # For deaths: positive is bad (red)
-                return f"🔴 +{self.format_number(value)}"
-            else:
-                # For KP, Power, Kills: positive is good (green)
-                return f"🟢 +{self.format_number(value)}"
+            # Positive change = green
+            return f"🟢 +{self.format_number(value)}"
         else:
-            # Negative change
-            if reverse:
-                # For deaths: negative is good (green)
-                return f"🟢 {self.format_number(value)}"
-            else:
-                # For KP, Power, Kills: negative is bad (red)
-                return f"🔴 {self.format_number(value)}"
+            # Negative change = red
+            return f"🔴 {self.format_number(value)}"
 
     def create_player_embed(self, player_data):
         """Create rich embed for player stats"""
@@ -124,7 +116,7 @@ class KvKBot(commands.Cog):
 
         embed.add_field(
             name="☠️ **Deaths**",
-            value=f"```yaml\nTotal: {self.format_number(stats.get('deads', 0))}```\n{self.format_delta(delta.get('deads', 0), reverse=True)}\n",
+            value=f"```yaml\nTotal: {self.format_number(stats.get('deads', 0))}```\n{self.format_delta(delta.get('deads', 0))}\n",
             inline=True
         )
 

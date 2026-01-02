@@ -98,16 +98,31 @@ class KvKBot(commands.Cog):
             timestamp=datetime.utcnow()
         )
 
-        # Current Stats with color-coded deltas - 2 per row for better spacing
+        # Current Stats with deltas in parentheses - 2 per row for better spacing
+        kp_total = self.format_number(stats.get('kill_points', 0))
+        kp_delta = self.format_delta(delta.get('kill_points', 0))
+
+        power_total = self.format_number(stats.get('power', 0))
+        power_delta = self.format_delta(delta.get('power', 0))
+
+        deaths_total = self.format_number(stats.get('deads', 0))
+        deaths_delta = self.format_delta(delta.get('deads', 0))
+
+        t5_total = self.format_number(stats.get('t5_kills', 0))
+        t5_delta = self.format_delta(delta.get('t5_kills', 0))
+
+        t4_total = self.format_number(stats.get('t4_kills', 0))
+        t4_delta = self.format_delta(delta.get('t4_kills', 0))
+
         embed.add_field(
             name="⚔️ **Kill Points**",
-            value=f"```yaml\nTotal: {self.format_number(stats.get('kill_points', 0))}```\n{self.format_delta(delta.get('kill_points', 0))}\n",
+            value=f"```{kp_total}```({kp_delta})",
             inline=True
         )
 
         embed.add_field(
             name="💪 **Power**",
-            value=f"```yaml\nTotal: {self.format_number(stats.get('power', 0))}```\n{self.format_delta(delta.get('power', 0))}\n",
+            value=f"```{power_total}```({power_delta})",
             inline=True
         )
 
@@ -116,13 +131,13 @@ class KvKBot(commands.Cog):
 
         embed.add_field(
             name="☠️ **Deaths**",
-            value=f"```yaml\nTotal: {self.format_number(stats.get('deads', 0))}```\n{self.format_delta(delta.get('deads', 0))}\n",
+            value=f"```{deaths_total}```({deaths_delta})",
             inline=True
         )
 
         embed.add_field(
             name="🎯 **T5 Kills**",
-            value=f"```yaml\nTotal: {self.format_number(stats.get('t5_kills', 0))}```\n{self.format_delta(delta.get('t5_kills', 0))}\n",
+            value=f"```{t5_total}```({t5_delta})",
             inline=True
         )
 
@@ -131,7 +146,7 @@ class KvKBot(commands.Cog):
 
         embed.add_field(
             name="⚡ **T4 Kills**",
-            value=f"```yaml\nTotal: {self.format_number(stats.get('t4_kills', 0))}```\n{self.format_delta(delta.get('t4_kills', 0))}\n",
+            value=f"```{t4_total}```({t4_delta})",
             inline=True
         )
 
@@ -232,13 +247,14 @@ class KvKBot(commands.Cog):
                 }
 
                 embed = discord.Embed(
-                    title=f"🏆 Top {limit} - {sort_labels.get(sort_by, sort_by)}",
-                    description=f"Kingdom 3584 • Season {KVK_SEASON_ID}",
+                    title=f"🏆 Top {limit} Players",
+                    description=f"**{sort_labels.get(sort_by, sort_by)}**\nKingdom 3584 • Season {KVK_SEASON_ID}\n━━━━━━━━━━━━━━━━━━━━━━━━",
                     color=discord.Color.gold(),
                     timestamp=datetime.utcnow()
                 )
 
                 # Add players to embed
+                leaderboard_text = ""
                 for i, player in enumerate(leaderboard[:limit], 1):
                     stats = player.get('stats', {})
                     delta = player.get('delta', {})
@@ -247,8 +263,10 @@ class KvKBot(commands.Cog):
                     if sort_by.endswith('_gained'):
                         field_name = sort_by.replace('_gained', '')
                         value = delta.get(field_name, 0)
+                        total_value = stats.get(field_name, 0)
                     else:
                         value = stats.get(sort_by, 0)
+                        total_value = value
 
                     # Rank emoji
                     if i == 1:
@@ -258,13 +276,22 @@ class KvKBot(commands.Cog):
                     elif i == 3:
                         rank_emoji = "🥉"
                     else:
-                        rank_emoji = f"**{i}.**"
+                        rank_emoji = f"**{i}**"
 
-                    embed.add_field(
-                        name=f"{rank_emoji} {player['governor_name']}",
-                        value=f"**{self.format_number(value)}** • ID: {player['governor_id']}",
-                        inline=False
-                    )
+                    # Format with delta if sorting by gained
+                    if sort_by.endswith('_gained'):
+                        delta_display = self.format_delta(value)
+                        value_text = f"`{self.format_number(total_value)}` ({delta_display})"
+                    else:
+                        value_text = f"`{self.format_number(value)}`"
+
+                    leaderboard_text += f"{rank_emoji} **{player['governor_name']}**\n{value_text}\n\n"
+
+                embed.add_field(
+                    name="\u200b",
+                    value=leaderboard_text,
+                    inline=False
+                )
 
                 embed.set_footer(text=f"Last updated: {data.get('current_date', 'N/A')}")
                 await interaction.followup.send(embed=embed)
@@ -299,30 +326,33 @@ class KvKBot(commands.Cog):
 
                 embed = discord.Embed(
                     title="📊 Kingdom 3584 Statistics",
-                    description=f"**Season:** {KVK_SEASON_ID} • **Players:** {data.get('player_count', 0)}",
+                    description=f"**Season {KVK_SEASON_ID}** • {data.get('player_count', 0)} Players\n━━━━━━━━━━━━━━━━━━━━━━━━",
                     color=discord.Color.purple(),
                     timestamp=datetime.utcnow()
                 )
 
                 # Kingdom Totals
                 embed.add_field(
-                    name="🏰 Kingdom Totals",
-                    value=f"**KP:** {self.format_number(totals.get('kill_points', 0))}\n"
-                          f"**Power:** {self.format_number(totals.get('power', 0))}\n"
-                          f"**T5 Kills:** {self.format_number(totals.get('t5_kills', 0))}\n"
-                          f"**T4 Kills:** {self.format_number(totals.get('t4_kills', 0))}",
+                    name="🏰 **Kingdom Totals**",
+                    value=f"⚔️ Kill Points: `{self.format_number(totals.get('kill_points', 0))}`\n"
+                          f"💪 Power: `{self.format_number(totals.get('power', 0))}`\n"
+                          f"🎯 T5 Kills: `{self.format_number(totals.get('t5_kills', 0))}`\n"
+                          f"⚡ T4 Kills: `{self.format_number(totals.get('t4_kills', 0))}`",
                     inline=True
                 )
 
                 # Averages
                 embed.add_field(
-                    name="📈 Per Player Average",
-                    value=f"**KP:** {self.format_number(averages.get('kill_points', 0))}\n"
-                          f"**Power:** {self.format_number(averages.get('power', 0))}\n"
-                          f"**T5 Kills:** {self.format_number(averages.get('t5_kills', 0))}\n"
-                          f"**T4 Kills:** {self.format_number(averages.get('t4_kills', 0))}",
+                    name="📈 **Per Player Average**",
+                    value=f"⚔️ Kill Points: `{self.format_number(averages.get('kill_points', 0))}`\n"
+                          f"💪 Power: `{self.format_number(averages.get('power', 0))}`\n"
+                          f"🎯 T5 Kills: `{self.format_number(averages.get('t5_kills', 0))}`\n"
+                          f"⚡ T4 Kills: `{self.format_number(averages.get('t4_kills', 0))}`",
                     inline=True
                 )
+
+                # Empty field for spacing
+                embed.add_field(name="\u200b", value="\u200b", inline=False)
 
                 # Top Performers
                 top_kp = top_players.get('kill_points', {})
@@ -330,18 +360,20 @@ class KvKBot(commands.Cog):
                 top_t5 = top_players.get('t5_kills', {})
 
                 embed.add_field(
-                    name="🏆 Top Performers",
-                    value=f"**KP:** {top_kp.get('name', 'N/A')} ({self.format_number(top_kp.get('value', 0))})\n"
-                          f"**Power:** {top_power.get('name', 'N/A')} ({self.format_number(top_power.get('value', 0))})\n"
-                          f"**T5 Kills:** {top_t5.get('name', 'N/A')} ({self.format_number(top_t5.get('value', 0))})",
+                    name="🏆 **Top Performers**",
+                    value=f"⚔️ **KP:** {top_kp.get('name', 'N/A')}\n`{self.format_number(top_kp.get('value', 0))}`\n\n"
+                          f"💪 **Power:** {top_power.get('name', 'N/A')}\n`{self.format_number(top_power.get('value', 0))}`\n\n"
+                          f"🎯 **T5 Kills:** {top_t5.get('name', 'N/A')}\n`{self.format_number(top_t5.get('value', 0))}`",
                     inline=False
                 )
 
                 # Dates
+                baseline_date = data.get('baseline_date', 'N/A').split('T')[0] if data.get('baseline_date') else 'N/A'
+                current_date = data.get('current_date', 'N/A').split('T')[0] if data.get('current_date') else 'N/A'
+
                 embed.add_field(
-                    name="📅 Data Period",
-                    value=f"**Baseline:** {data.get('baseline_date', 'N/A')}\n"
-                          f"**Last Update:** {data.get('current_date', 'N/A')}",
+                    name="📅 **Data Period**",
+                    value=f"**Baseline:** {baseline_date}\n**Last Update:** {current_date}",
                     inline=False
                 )
 
@@ -396,7 +428,9 @@ class KvKBot(commands.Cog):
             # Create comparison embed
             embed = discord.Embed(
                 title="⚔️ Player Comparison",
-                description=f"**{player1['governor_name']}** vs **{player2['governor_name']}**",
+                description=f"**{player1['governor_name']}** vs **{player2['governor_name']}**\n"
+                           f"Rank: #{player1.get('rank', 'N/A')} vs #{player2.get('rank', 'N/A')}\n"
+                           f"━━━━━━━━━━━━━━━━━━━━━━━━",
                 color=discord.Color.orange(),
                 timestamp=datetime.utcnow()
             )
@@ -406,40 +440,37 @@ class KvKBot(commands.Cog):
             delta1 = player1.get('delta', {})
             delta2 = player2.get('delta', {})
 
-            # Compare metrics
+            # Compare metrics with deltas
             metrics = [
-                ('Kill Points', 'kill_points'),
-                ('KP Gained', 'kill_points', True),
-                ('Power', 'power'),
-                ('T5 Kills', 't5_kills'),
-                ('T4 Kills', 't4_kills'),
-                ('Deaths', 'deads')
+                ('⚔️ Kill Points', 'kill_points'),
+                ('💪 Power', 'power'),
+                ('☠️ Deaths', 'deads'),
+                ('🎯 T5 Kills', 't5_kills'),
+                ('⚡ T4 Kills', 't4_kills'),
             ]
 
-            for metric_name, field, *is_delta in metrics:
-                if is_delta:
-                    val1 = delta1.get(field, 0)
-                    val2 = delta2.get(field, 0)
-                else:
-                    val1 = stats1.get(field, 0)
-                    val2 = stats2.get(field, 0)
+            for metric_name, field in metrics:
+                val1_stat = stats1.get(field, 0)
+                val2_stat = stats2.get(field, 0)
+                val1_delta = delta1.get(field, 0)
+                val2_delta = delta2.get(field, 0)
 
-                diff = val1 - val2
+                diff = val1_stat - val2_stat
                 winner = "🟢" if diff > 0 else ("🔴" if diff < 0 else "⚪")
 
+                delta1_display = self.format_delta(val1_delta)
+                delta2_display = self.format_delta(val2_delta)
+
                 embed.add_field(
-                    name=f"{metric_name}",
-                    value=f"{winner} {self.format_number(val1)} vs {self.format_number(val2)}\n"
-                          f"Diff: {'+' if diff >= 0 else ''}{self.format_number(diff)}",
+                    name=f"**{metric_name}**",
+                    value=f"{winner} `{self.format_number(val1_stat)}` ({delta1_display})\n"
+                          f"     vs\n"
+                          f"     `{self.format_number(val2_stat)}` ({delta2_display})",
                     inline=True
                 )
 
-            # Rankings
-            embed.add_field(
-                name="🏆 Rank",
-                value=f"#{player1.get('rank', 'N/A')} vs #{player2.get('rank', 'N/A')}",
-                inline=False
-            )
+            # Empty field for better layout
+            embed.add_field(name="\u200b", value="\u200b", inline=True)
 
             embed.set_footer(text="Kingdom 3584 KvK Tracker")
             await interaction.followup.send(embed=embed)

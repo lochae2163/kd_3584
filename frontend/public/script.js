@@ -287,6 +287,9 @@ function renderLeaderboard(players) {
             </tr>
         `;
     }).join('');
+
+    // Check if table needs scroll hint
+    setTimeout(checkTableScroll, 100);
 }
 
 /**
@@ -345,6 +348,20 @@ sortSelect.addEventListener('change', (e) => {
     loadLeaderboard(e.target.value);
 });
 
+/**
+ * Check if table needs horizontal scroll and show hint
+ */
+function checkTableScroll() {
+    const tableWrapper = document.getElementById('table-wrapper');
+    const scrollHint = document.getElementById('scroll-hint');
+
+    if (tableWrapper && scrollHint) {
+        // Check if table is scrollable (content wider than container)
+        const needsScroll = tableWrapper.scrollWidth > tableWrapper.clientWidth;
+        scrollHint.style.display = needsScroll ? 'block' : 'none';
+    }
+}
+
 // Pagination button listeners
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('first-page').addEventListener('click', () => goToPage(1));
@@ -357,4 +374,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadStats();
     loadLeaderboard();
+
+    // Check table scroll on resize
+    window.addEventListener('resize', checkTableScroll);
+    // Initial check after a short delay to ensure table is rendered
+    setTimeout(checkTableScroll, 500);
 });

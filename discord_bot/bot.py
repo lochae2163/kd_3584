@@ -38,7 +38,9 @@ class KvKBot(commands.Cog):
 
     async def cog_load(self):
         """Initialize aiohttp session"""
-        self.session = aiohttp.ClientSession()
+        # Set timeout to 10 seconds for API requests
+        timeout = aiohttp.ClientTimeout(total=10)
+        self.session = aiohttp.ClientSession(timeout=timeout)
 
     async def cog_unload(self):
         """Close aiohttp session"""
@@ -433,6 +435,8 @@ class KvKBot(commands.Cog):
     @app_commands.command(name="help", description="Show bot commands and usage")
     async def help_command(self, interaction: discord.Interaction):
         """Show help information"""
+        await interaction.response.defer(ephemeral=True)
+
         embed = discord.Embed(
             title="📖 Kingdom 3584 KvK Tracker Bot",
             description="Get your KvK stats directly in Discord!",
@@ -473,6 +477,38 @@ async def on_ready():
         print(f'✅ Synced {len(synced)} command(s)')
     except Exception as e:
         print(f'❌ Failed to sync commands: {e}')
+
+
+@bot.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    """Global error handler for slash commands"""
+    logger.error(f"Command error: {error}", exc_info=error)
+
+    # Handle specific error types
+    if isinstance(error, app_commands.CommandInvokeError):
+        original_error = error.original
+
+        # Handle webhook timeout errors gracefully
+        if isinstance(original_error, discord.errors.NotFound):
+            logger.warning(f"Webhook timeout for command: {interaction.command.name if interaction.command else 'unknown'}")
+            # Don't try to respond - the interaction has already timed out
+            return
+
+        error_message = "❌ An error occurred while processing your command. Please try again."
+    else:
+        error_message = f"❌ Error: {str(error)}"
+
+    # Try to send error message if interaction hasn't expired
+    try:
+        if not interaction.response.is_done():
+            await interaction.response.send_message(error_message, ephemeral=True)
+        else:
+            await interaction.followup.send(error_message, ephemeral=True)
+    except discord.errors.NotFound:
+        # Interaction has expired, log it
+        logger.warning("Could not send error message - interaction expired")
+    except Exception as e:
+        logger.error(f"Failed to send error message: {e}")
 
 
 async def main():

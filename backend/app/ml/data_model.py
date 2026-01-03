@@ -513,10 +513,11 @@ class KvKDataModel:
         Calculate summary statistics for a list of players.
 
         For top_players:
-        - kill_points: Uses delta (gained)
-        - t5_kills: Uses delta (gained)
-        - power: Uses total stats (overall power)
-        - Others: Use total stats
+        - kill_points: Uses delta (gained) - who gained most KP
+        - t5_kills: Uses delta (gained) - who gained most T5 kills
+        - t4_kills: Uses delta (gained) - who gained most T4 kills
+        - deads: Uses delta (gained) - who gained most deaths
+        - power: Uses total stats (overall power) - who has highest power
 
         Args:
             players: List of player dicts (with stats and delta)
@@ -548,25 +549,26 @@ class KvKDataModel:
                 summary["totals"][col] = int(df_stats[col].sum())
                 summary["averages"][col] = int(df_stats[col].mean())
 
-        # Find top players - use delta for kill_points and t5_kills, stats for others
+        # Find top players - use delta for kill_points, t5_kills, t4_kills, deads
+        # Use stats for power only
         for col in self.NUMERIC_COLUMNS:
-            # Use delta for kill_points and t5_kills
-            if col in ['kill_points', 't5_kills']:
+            # Use delta for kill_points, t5_kills, t4_kills, deads
+            if col in ['kill_points', 't5_kills', 't4_kills', 'deads']:
                 if col in df_delta.columns:
                     idx = df_delta[col].idxmax()
                     summary["top_players"][col] = {
                         "name": players[idx].get('governor_name'),
                         "governor_id": players[idx].get('governor_id'),
-                        "value": int(df_delta.loc[idx, col])  # Delta value
+                        "value": int(df_delta.loc[idx, col])  # Delta value (gained)
                     }
-            # Use stats for power and others
+            # Use stats for power only
             else:
                 if col in df_stats.columns:
                     idx = df_stats[col].idxmax()
                     summary["top_players"][col] = {
                         "name": players[idx].get('governor_name'),
                         "governor_id": players[idx].get('governor_id'),
-                        "value": int(df_stats.loc[idx, col])  # Stats value
+                        "value": int(df_stats.loc[idx, col])  # Stats value (total)
                     }
 
         return summary

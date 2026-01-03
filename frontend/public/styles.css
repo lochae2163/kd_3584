@@ -189,6 +189,14 @@ body {
     border-left-color: #a855f7;
 }
 
+.top-card.green {
+    border-left-color: #22c55e;
+}
+
+.top-card.red {
+    border-left-color: #ef4444;
+}
+
 .top-card .title {
     font-size: 0.85rem;
     color: #94a3b8;

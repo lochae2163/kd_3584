@@ -583,10 +583,20 @@ async def on_ready():
     print(f'📊 Connected to {len(bot.guilds)} guilds')
     print('🚀 Bot is ready!')
 
-    # Sync commands
+    # Sync commands - use guild-specific sync for instant updates
     try:
-        synced = await bot.tree.sync()
-        print(f'✅ Synced {len(synced)} command(s)')
+        # First, clear global commands to avoid conflicts
+        bot.tree.clear_commands(guild=None)
+        await bot.tree.sync()
+        print('✅ Cleared global commands')
+
+        # Then sync to each guild (instant updates, no cache delay)
+        for guild in bot.guilds:
+            try:
+                synced = await bot.tree.sync(guild=discord.Object(id=guild.id))
+                print(f'✅ Synced {len(synced)} command(s) to guild: {guild.name} (ID: {guild.id})')
+            except Exception as e:
+                print(f'❌ Failed to sync to guild {guild.name}: {e}')
     except Exception as e:
         print(f'❌ Failed to sync commands: {e}')
 

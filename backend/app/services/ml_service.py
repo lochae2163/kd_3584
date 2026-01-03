@@ -117,6 +117,7 @@ class MLService:
     ) -> Dict:
         """
         Process current data CSV, calculate deltas, save, and add to history.
+        New players are automatically added to baseline with zero deltas.
         """
         # Process through ML model
         result = self.model.process_csv(csv_content)
@@ -139,6 +140,31 @@ class MLService:
             baseline.get('players', []),
             result['players']
         )
+
+        # Check if any new players were added and update baseline
+        new_players = [p for p in players_with_deltas if p.get('newly_added_to_baseline', False)]
+        if new_players:
+            # Add new players to baseline
+            baseline_players = baseline.get('players', [])
+            for new_player in new_players:
+                baseline_players.append({
+                    "governor_id": new_player['governor_id'],
+                    "governor_name": new_player['governor_name'],
+                    "stats": new_player['stats']
+                })
+
+            # Update baseline in database
+            await baselines.update_one(
+                {"kvk_season_id": kvk_season_id},
+                {
+                    "$set": {
+                        "players": baseline_players,
+                        "player_count": len(baseline_players),
+                        "last_updated": datetime.utcnow()
+                    }
+                }
+            )
+            logger.info(f"Updated baseline with {len(new_players)} new players for season {kvk_season_id}")
 
         # Rank players by kill_points
         ranked_players = self.model.rank_players(players_with_deltas, "kill_points")
@@ -198,6 +224,7 @@ class MLService:
     ) -> Dict:
         """
         Process current data Excel file, calculate deltas, save, and add to history.
+        New players are automatically added to baseline with zero deltas.
         """
         # Process through ML model
         result = self.model.process_excel(excel_bytes, kingdom_id)
@@ -220,6 +247,31 @@ class MLService:
             baseline.get('players', []),
             result['players']
         )
+
+        # Check if any new players were added and update baseline
+        new_players = [p for p in players_with_deltas if p.get('newly_added_to_baseline', False)]
+        if new_players:
+            # Add new players to baseline
+            baseline_players = baseline.get('players', [])
+            for new_player in new_players:
+                baseline_players.append({
+                    "governor_id": new_player['governor_id'],
+                    "governor_name": new_player['governor_name'],
+                    "stats": new_player['stats']
+                })
+
+            # Update baseline in database
+            await baselines.update_one(
+                {"kvk_season_id": kvk_season_id},
+                {
+                    "$set": {
+                        "players": baseline_players,
+                        "player_count": len(baseline_players),
+                        "last_updated": datetime.utcnow()
+                    }
+                }
+            )
+            logger.info(f"Updated baseline with {len(new_players)} new players for season {kvk_season_id}")
 
         # Rank players by kill_points
         ranked_players = self.model.rank_players(players_with_deltas, "kill_points")

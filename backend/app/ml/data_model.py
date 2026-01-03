@@ -435,17 +435,20 @@ class KvKDataModel:
         return delta
     
     def calculate_all_deltas(
-        self, 
-        baseline_players: List[Dict], 
+        self,
+        baseline_players: List[Dict],
         current_players: List[Dict]
     ) -> List[Dict]:
         """
         Calculate deltas for all players.
-        
+
+        New players (not in baseline) will have their current stats
+        set as their new baseline with zero deltas.
+
         Args:
             baseline_players: List of player dicts from baseline
             current_players: List of player dicts from current snapshot
-            
+
         Returns:
             List of player dicts with delta information
         """
@@ -454,29 +457,51 @@ class KvKDataModel:
         for player in baseline_players:
             gov_id = player.get('governor_id')
             baseline_lookup[gov_id] = player.get('stats', {})
-        
+
         # Calculate deltas for each current player
         results = []
-        
+        new_players_added = []
+
         for player in current_players:
             gov_id = player.get('governor_id')
             current_stats = player.get('stats', {})
-            
-            # Get baseline stats (empty dict if player not in baseline)
-            baseline_stats = baseline_lookup.get(gov_id, {})
-            
-            # Calculate delta
-            delta = self.calculate_player_delta(baseline_stats, current_stats)
-            
+
+            # Check if player exists in baseline
+            if gov_id in baseline_lookup:
+                # Existing player - calculate delta normally
+                baseline_stats = baseline_lookup[gov_id]
+                delta = self.calculate_player_delta(baseline_stats, current_stats)
+                in_baseline = True
+            else:
+                # New player - use current stats as new baseline
+                # Set delta to zero for all stats
+                baseline_stats = current_stats
+                delta = {field: 0 for field in self.NUMERIC_COLUMNS}
+                in_baseline = False
+
+                # Track new player to add to baseline
+                new_players_added.append({
+                    "governor_id": gov_id,
+                    "governor_name": player.get('governor_name'),
+                    "stats": current_stats
+                })
+
+                logger.info(f"New player detected: {player.get('governor_name')} (ID: {gov_id}) - Setting as new baseline")
+
             # Add to results
             results.append({
                 "governor_id": gov_id,
                 "governor_name": player.get('governor_name'),
                 "stats": current_stats,
                 "delta": delta,
-                "in_baseline": gov_id in baseline_lookup
+                "in_baseline": in_baseline,
+                "newly_added_to_baseline": not in_baseline
             })
-        
+
+        # Log summary if new players were added
+        if new_players_added:
+            logger.info(f"Added {len(new_players_added)} new players to baseline automatically")
+
         return results
     
     # ==========================================

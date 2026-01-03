@@ -14,7 +14,6 @@
 - Power (total + gained)
 - Deaths (total + gained)
 - T5 Kills and T4 Kills
-- KP/Death Ratio
 
 ---
 

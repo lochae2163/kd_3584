@@ -695,18 +695,23 @@ async def on_ready():
 
     print('🚀 Bot is ready!')
 
-    # Sync commands to guilds for instant updates (no cache delay)
+    # Clear all guild commands and sync globally to force cache refresh
     try:
+        # First, clear guild-specific commands from all guilds
         for guild in bot.guilds:
             try:
-                # Copy global commands to this guild
-                bot.tree.copy_global_to(guild=discord.Object(id=guild.id))
-                synced = await bot.tree.sync(guild=discord.Object(id=guild.id))
-                print(f'✅ Synced {len(synced)} command(s) to guild: {guild.name} (ID: {guild.id})')
+                bot.tree.clear_commands(guild=discord.Object(id=guild.id))
+                await bot.tree.sync(guild=discord.Object(id=guild.id))
+                print(f'🗑️  Cleared guild commands for: {guild.name}')
             except Exception as e:
-                print(f'❌ Failed to sync to guild {guild.name}: {e}')
+                print(f'❌ Failed to clear guild commands for {guild.name}: {e}')
 
-        print('✅ All guilds synced successfully')
+        # Now sync commands globally (will take effect in 1 hour, but clears cache)
+        synced = await bot.tree.sync()
+        print(f'✅ Synced {len(synced)} command(s) globally')
+        print('⏳ Global commands will be available in all servers within 1 hour')
+        print('💡 To see commands immediately, kick and re-invite the bot')
+
     except Exception as e:
         print(f'❌ Failed to sync commands: {e}')
 
@@ -715,14 +720,7 @@ async def on_ready():
 async def on_guild_join(guild):
     """Handle when bot joins a new guild"""
     print(f'🎉 Joined new guild: {guild.name} (ID: {guild.id})')
-
-    try:
-        # Copy and sync commands immediately
-        bot.tree.copy_global_to(guild=discord.Object(id=guild.id))
-        synced = await bot.tree.sync(guild=discord.Object(id=guild.id))
-        print(f'✅ Synced {len(synced)} command(s) to new guild: {guild.name}')
-    except Exception as e:
-        print(f'❌ Failed to sync to new guild {guild.name}: {e}')
+    print('✅ Commands will be available via global sync (already synced)')
 
 
 @bot.tree.error

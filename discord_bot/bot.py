@@ -271,49 +271,59 @@ class KvKBot(commands.Cog):
             # Fetch all players from leaderboard
             url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=1000"
 
+            logger.info(f"Autocomplete triggered with input: '{current}'")
+
             async with self.session.get(url) as response:
                 if response.status != 200:
+                    logger.error(f"API returned status {response.status}")
                     return []
 
                 data = await response.json()
                 players = data.get('leaderboard', [])
+                logger.info(f"Fetched {len(players)} players from API")
 
             # If no input, return top 25 by rank
-            if not current:
-                return [
+            if not current or current.strip() == "":
+                choices = [
                     app_commands.Choice(
                         name=f"#{p['rank']} {p['governor_name']} (ID: {p['governor_id']})",
                         value=p['governor_id']
                     )
                     for p in players[:25]
                 ]
+                logger.info(f"Returning {len(choices)} default choices")
+                return choices
 
             # Search by name or ID
-            current_lower = current.lower()
+            current_lower = current.lower().strip()
             matches = []
 
             for player in players:
                 name = player['governor_name'].lower()
-                gov_id = player['governor_id']
+                gov_id = str(player['governor_id'])
 
                 # Match by name or ID
-                if current_lower in name or current in gov_id:
+                if current_lower in name or current.strip() in gov_id:
                     matches.append(player)
 
                 # Limit to 25 results (Discord autocomplete limit)
                 if len(matches) >= 25:
                     break
 
-            return [
+            logger.info(f"Found {len(matches)} matches for '{current}'")
+
+            choices = [
                 app_commands.Choice(
                     name=f"#{p['rank']} {p['governor_name']} (ID: {p['governor_id']})",
-                    value=p['governor_id']
+                    value=str(p['governor_id'])
                 )
                 for p in matches
             ]
 
+            return choices
+
         except Exception as e:
-            logger.error(f"Autocomplete error: {e}")
+            logger.error(f"Autocomplete error: {e}", exc_info=True)
             return []
 
     @app_commands.command(name="stats", description="Get your KvK stats by Governor ID or Name")

@@ -261,19 +261,76 @@ class KvKBot(commands.Cog):
 
         return embed
 
-    @app_commands.command(name="stats", description="Get your KvK stats by Governor ID")
-    @app_commands.describe(governor_id="Your Governor ID (e.g., 53242709)")
-    async def stats(self, interaction: discord.Interaction, governor_id: str):
-        """Get player stats by Governor ID"""
+    async def player_autocomplete(
+        self,
+        interaction: discord.Interaction,
+        current: str,
+    ) -> list[app_commands.Choice[str]]:
+        """Autocomplete for player search - search by name or ID"""
+        try:
+            # Fetch all players from leaderboard
+            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=1000"
+
+            async with self.session.get(url) as response:
+                if response.status != 200:
+                    return []
+
+                data = await response.json()
+                players = data.get('leaderboard', [])
+
+            # If no input, return top 25 by rank
+            if not current:
+                return [
+                    app_commands.Choice(
+                        name=f"#{p['rank']} {p['governor_name']} (ID: {p['governor_id']})",
+                        value=p['governor_id']
+                    )
+                    for p in players[:25]
+                ]
+
+            # Search by name or ID
+            current_lower = current.lower()
+            matches = []
+
+            for player in players:
+                name = player['governor_name'].lower()
+                gov_id = player['governor_id']
+
+                # Match by name or ID
+                if current_lower in name or current in gov_id:
+                    matches.append(player)
+
+                # Limit to 25 results (Discord autocomplete limit)
+                if len(matches) >= 25:
+                    break
+
+            return [
+                app_commands.Choice(
+                    name=f"#{p['rank']} {p['governor_name']} (ID: {p['governor_id']})",
+                    value=p['governor_id']
+                )
+                for p in matches
+            ]
+
+        except Exception as e:
+            logger.error(f"Autocomplete error: {e}")
+            return []
+
+    @app_commands.command(name="stats", description="Get your KvK stats by Governor ID or Name")
+    @app_commands.describe(player="Search by player name or Governor ID")
+    @app_commands.autocomplete(player=player_autocomplete)
+    async def stats(self, interaction: discord.Interaction, player: str):
+        """Get player stats by Governor ID or Name"""
         await interaction.response.defer()
 
         try:
-            url = f"{API_URL}/api/player/{governor_id}?kvk_season_id={KVK_SEASON_ID}"
+            # Player parameter is the governor_id from autocomplete
+            url = f"{API_URL}/api/player/{player}?kvk_season_id={KVK_SEASON_ID}"
 
             async with self.session.get(url) as response:
                 if response.status == 404:
                     await interaction.followup.send(
-                        f"❌ Governor ID `{governor_id}` not found in the current KvK season.",
+                        f"❌ Governor ID `{player}` not found in the current KvK season.",
                         ephemeral=True
                     )
                     return

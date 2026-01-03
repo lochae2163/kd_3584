@@ -431,16 +431,19 @@ class MLService:
             return {"success": True, "player": player_copy}
         
         players = current.get('players', [])
-        
-        # Find player
+
+        # Re-rank all players by kill_points_gained to get correct current rank
+        ranked_players = self.model.rank_players(players, "kill_points_gained")
+
+        # Find player in ranked list
         player = next(
-            (p for p in players if p.get('governor_id') == governor_id),
+            (p for p in ranked_players if p.get('governor_id') == governor_id),
             None
         )
-        
+
         if not player:
             return {"success": False, "error": "Player not found"}
-        
+
         return {
             "success": True,
             "player": player

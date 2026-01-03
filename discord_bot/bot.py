@@ -268,8 +268,8 @@ class KvKBot(commands.Cog):
     ) -> list[app_commands.Choice[str]]:
         """Autocomplete for player search - search by name or ID"""
         try:
-            # Fetch all players from leaderboard
-            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=1000"
+            # Fetch all players from leaderboard (API max limit is 500)
+            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=500"
 
             logger.info(f"Autocomplete triggered with input: '{current}'")
 
@@ -347,7 +347,7 @@ class KvKBot(commands.Cog):
 
             # If not found by ID, try searching by name
             logger.info(f"Player '{player}' not found by ID, searching by name...")
-            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=1000"
+            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=500"
 
             async with self.session.get(url) as response:
                 if response.status != 200:

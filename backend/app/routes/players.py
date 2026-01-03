@@ -48,10 +48,10 @@ async def get_summary(
 ):
     """Get kingdom summary statistics."""
     result = await ml_service.get_leaderboard(kvk_season_id, limit=500)
-    
+
     if not result.get('success'):
         raise HTTPException(status_code=404, detail=result.get('error'))
-    
+
     return {
         "kvk_season_id": kvk_season_id,
         "player_count": result.get('player_count', 0),
@@ -60,3 +60,37 @@ async def get_summary(
         "summary": result.get('summary', {}),
         "top_players": result.get('summary', {}).get('top_players', {})
     }
+
+
+@router.get("/history")
+async def get_upload_history(
+    kvk_season_id: str = Query(default="season_1"),
+    limit: int = Query(default=50, le=100)
+):
+    """
+    Get upload history for a season (Phase 2A: Historical Tracking).
+    Returns list of all uploads with summary data.
+    """
+    result = await ml_service.get_upload_history(kvk_season_id, limit)
+
+    if not result.get('success'):
+        raise HTTPException(status_code=404, detail=result.get('error'))
+
+    return result
+
+
+@router.get("/player/{governor_id}/timeline")
+async def get_player_timeline(
+    governor_id: str,
+    kvk_season_id: str = Query(default="season_1")
+):
+    """
+    Get player progress timeline across all uploads (Phase 2A: Historical Tracking).
+    Shows how a player's stats evolved over time.
+    """
+    result = await ml_service.get_player_timeline(kvk_season_id, governor_id)
+
+    if not result.get('success'):
+        raise HTTPException(status_code=404, detail=result.get('error'))
+
+    return result

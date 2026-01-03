@@ -787,6 +787,219 @@ class KvKBot(commands.Cog):
         embed.set_footer(text="Kingdom 3584 KvK Tracker • Season 1")
         await interaction.followup.send(embed=embed, ephemeral=True)
 
+    @app_commands.command(name="history", description="View upload history for the current season")
+    @app_commands.describe(limit="Number of recent uploads to show (default: 10)")
+    async def history(self, interaction: discord.Interaction, limit: int = 10):
+        """Show upload history for the season"""
+        await interaction.response.defer()
+
+        try:
+            # Limit to reasonable range
+            limit = max(1, min(limit, 25))
+
+            url = f"{API_URL}/api/history?kvk_season_id={KVK_SEASON_ID}&limit={limit}"
+
+            async with self.session.get(url) as response:
+                if response.status != 200:
+                    await interaction.followup.send(
+                        "❌ No upload history found for this season.",
+                        ephemeral=True
+                    )
+                    return
+
+                data = await response.json()
+                uploads = data.get('uploads', [])
+
+                if not uploads:
+                    await interaction.followup.send(
+                        "❌ No upload history found for this season.",
+                        ephemeral=True
+                    )
+                    return
+
+                embed = discord.Embed(
+                    title=f"📜 Upload History",
+                    description=f"Recent {len(uploads)} uploads for Season {KVK_SEASON_ID}\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    color=discord.Color.purple(),
+                    timestamp=datetime.utcnow()
+                )
+
+                for i, upload in enumerate(uploads, 1):
+                    timestamp = upload.get('timestamp')
+                    if timestamp:
+                        # Format timestamp nicely
+                        dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00')) if isinstance(timestamp, str) else timestamp
+                        date_str = dt.strftime('%b %d, %Y %H:%M UTC')
+                    else:
+                        date_str = 'Unknown date'
+
+                    description = upload.get('description', 'No description')
+                    player_count = upload.get('player_count', 0)
+                    file_name = upload.get('file_name', 'Unknown')
+
+                    summary = upload.get('summary', {})
+                    total_kp = summary.get('total_kill_points_gained', 0)
+
+                    embed.add_field(
+                        name=f"#{i} • {file_name}",
+                        value=f"📅 {date_str}\n"
+                              f"📝 {description}\n"
+                              f"👥 {player_count} players\n"
+                              f"⚔️ {self.format_number(total_kp)} total KP gained\n\u200b",
+                        inline=False
+                    )
+
+                embed.set_footer(text="Kingdom 3584 KvK Tracker • Season 1")
+                await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            logger.error(f"History command error: {e}", exc_info=True)
+            await interaction.followup.send(
+                f"❌ Error: {str(e)}",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="timeline", description="View a player's progress timeline")
+    @app_commands.describe(player="Search by player name or Governor ID")
+    @app_commands.autocomplete(player=player_autocomplete)
+    async def timeline(self, interaction: discord.Interaction, player: str):
+        """Show player progress over time"""
+        await interaction.response.defer()
+
+        try:
+            # First, try as governor_id
+            url = f"{API_URL}/api/player/{player}/timeline?kvk_season_id={KVK_SEASON_ID}"
+
+            async with self.session.get(url) as response:
+                if response.status != 200:
+                    # Try searching by name
+                    search_url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=500"
+                    async with self.session.get(search_url) as search_response:
+                        if search_response.status != 200:
+                            await interaction.followup.send(
+                                "❌ Failed to fetch timeline. Please try again later.",
+                                ephemeral=True
+                            )
+                            return
+
+                        search_data = await search_response.json()
+                        players = search_data.get('leaderboard', [])
+                        player_lower = player.lower().strip()
+                        matches = [p for p in players if player_lower in p['governor_name'].lower()]
+
+                        if not matches:
+                            await interaction.followup.send(
+                                f"❌ No player found matching `{player}`.",
+                                ephemeral=True
+                            )
+                            return
+
+                        if len(matches) > 1:
+                            match_list = "\n".join([f"• {p['governor_name']} (ID: {p['governor_id']})" for p in matches[:5]])
+                            await interaction.followup.send(
+                                f"⚠️ Found {len(matches)} players matching `{player}`:\n{match_list}\n\nPlease use `/timeline` with the exact Governor ID.",
+                                ephemeral=True
+                            )
+                            return
+
+                        # Retry with correct ID
+                        governor_id = matches[0]['governor_id']
+                        url = f"{API_URL}/api/player/{governor_id}/timeline?kvk_season_id={KVK_SEASON_ID}"
+                        response = await self.session.get(url)
+
+                data = await response.json()
+
+                if not data.get('success'):
+                    await interaction.followup.send(
+                        f"❌ {data.get('error', 'No timeline data found')}",
+                        ephemeral=True
+                    )
+                    return
+
+                governor_name = data.get('governor_name', 'Unknown')
+                governor_id = data.get('governor_id', 'Unknown')
+                timeline = data.get('timeline', [])
+                baseline = data.get('baseline')
+
+                if not timeline:
+                    await interaction.followup.send(
+                        f"❌ No timeline data found for {governor_name}.",
+                        ephemeral=True
+                    )
+                    return
+
+                embed = discord.Embed(
+                    title=f"📈 Progress Timeline",
+                    description=f"**{governor_name}** (ID: {governor_id})\nSeason {KVK_SEASON_ID} • {len(timeline)} snapshots\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    color=discord.Color.blue(),
+                    timestamp=datetime.utcnow()
+                )
+
+                # Add baseline if available
+                if baseline:
+                    baseline_stats = baseline.get('stats', {})
+                    embed.add_field(
+                        name="📊 Baseline (Starting Point)",
+                        value=f"⚔️ KP: `{self.format_number(baseline_stats.get('kill_points', 0))}`\n"
+                              f"💪 Power: `{self.format_number(baseline_stats.get('power', 0))}`\n\u200b",
+                        inline=False
+                    )
+
+                # Show most recent 5 snapshots
+                for i, snapshot in enumerate(timeline[-5:], 1):
+                    timestamp = snapshot.get('timestamp')
+                    if timestamp:
+                        dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00')) if isinstance(timestamp, str) else timestamp
+                        date_str = dt.strftime('%b %d, %H:%M')
+                    else:
+                        date_str = 'Unknown date'
+
+                    stats = snapshot.get('stats', {})
+                    delta = snapshot.get('delta', {})
+                    rank = snapshot.get('rank', 'N/A')
+                    file_name = snapshot.get('file_name', 'Unknown')
+                    description = snapshot.get('description', '')
+
+                    kp_delta = self.format_delta(delta.get('kill_points', 0))
+
+                    embed.add_field(
+                        name=f"#{rank} • {file_name}",
+                        value=f"📅 {date_str} - {description}\n"
+                              f"⚔️ KP: `{self.format_number(stats.get('kill_points', 0))}` {kp_delta}\n"
+                              f"💪 Power: `{self.format_number(stats.get('power', 0))}`\n\u200b",
+                        inline=False
+                    )
+
+                # Add summary at the end
+                first_snapshot = timeline[0]
+                last_snapshot = timeline[-1]
+                first_stats = first_snapshot.get('stats', {})
+                last_stats = last_snapshot.get('stats', {})
+
+                kp_growth = last_stats.get('kill_points', 0) - first_stats.get('kill_points', 0)
+                rank_first = first_snapshot.get('rank', 0)
+                rank_last = last_snapshot.get('rank', 0)
+                rank_change = rank_first - rank_last
+
+                embed.add_field(
+                    name="📊 Overall Progress",
+                    value=f"⚔️ Total KP Gained: `{self.format_number(kp_growth)}`\n"
+                          f"🏆 Rank Change: **{rank_first}** → **{rank_last}** "
+                          f"({'🟢 +' + str(rank_change) if rank_change > 0 else '🔴 ' + str(rank_change) if rank_change < 0 else 'No change'})\n"
+                          f"📈 Snapshots Tracked: {len(timeline)}",
+                    inline=False
+                )
+
+                embed.set_footer(text=f"Kingdom 3584 KvK Tracker • Showing last 5 of {len(timeline)} snapshots")
+                await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            logger.error(f"Timeline command error: {e}", exc_info=True)
+            await interaction.followup.send(
+                f"❌ Error: {str(e)}",
+                ephemeral=True
+            )
+
 
 @bot.event
 async def on_ready():

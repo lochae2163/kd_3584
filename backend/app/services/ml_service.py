@@ -193,12 +193,14 @@ class MLService:
         await current_collection.insert_one(current_doc)
 
         # Also save to history (append, don't replace)
+        # Include full player snapshots for historical tracking (Phase 2A)
         history_doc = {
             "kvk_season_id": kvk_season_id,
             "file_name": file_name,
             "description": description,
             "timestamp": timestamp,
             "player_count": result['player_count'],
+            "players": ranked_players,  # Store full player snapshots with ranks and deltas
             "summary": summary
         }
 
@@ -300,12 +302,14 @@ class MLService:
         await current_collection.insert_one(current_doc)
 
         # Also save to history (append, don't replace)
+        # Include full player snapshots for historical tracking (Phase 2A)
         history_doc = {
             "kvk_season_id": kvk_season_id,
             "file_name": file_name,
             "description": description,
             "timestamp": timestamp,
             "player_count": result['player_count'],
+            "players": ranked_players,  # Store full player snapshots with ranks and deltas
             "summary": summary
         }
 
@@ -447,6 +451,128 @@ class MLService:
         return {
             "success": True,
             "player": player
+        }
+
+    async def get_upload_history(
+        self,
+        kvk_season_id: str,
+        limit: int = 50
+    ) -> Dict:
+        """
+        Get upload history for a season (Phase 2A: Historical Tracking).
+        Returns list of all uploads with summary data, ordered by timestamp (newest first).
+        """
+        history_collection = Database.get_collection("upload_history")
+
+        # Fetch history, sorted by timestamp descending (newest first)
+        cursor = history_collection.find(
+            {"kvk_season_id": kvk_season_id}
+        ).sort("timestamp", -1).limit(limit)
+
+        history = await cursor.to_list(length=limit)
+
+        if not history:
+            return {
+                "success": False,
+                "error": f"No upload history found for season {kvk_season_id}"
+            }
+
+        # Convert MongoDB _id to string and format response
+        formatted_history = []
+        for upload in history:
+            formatted_history.append({
+                "upload_id": str(upload['_id']),
+                "file_name": upload.get('file_name', 'Unknown'),
+                "description": upload.get('description', ''),
+                "timestamp": upload.get('timestamp'),
+                "player_count": upload.get('player_count', 0),
+                "summary": upload.get('summary', {})
+            })
+
+        return {
+            "success": True,
+            "kvk_season_id": kvk_season_id,
+            "upload_count": len(formatted_history),
+            "uploads": formatted_history
+        }
+
+    async def get_player_timeline(
+        self,
+        kvk_season_id: str,
+        governor_id: str
+    ) -> Dict:
+        """
+        Get player progress timeline across all uploads (Phase 2A: Historical Tracking).
+        Shows how a player's stats evolved over time.
+        """
+        history_collection = Database.get_collection("upload_history")
+
+        # Fetch all uploads for this season, sorted by timestamp
+        cursor = history_collection.find(
+            {"kvk_season_id": kvk_season_id}
+        ).sort("timestamp", 1)  # Ascending order (oldest first)
+
+        all_uploads = await cursor.to_list(length=None)
+
+        if not all_uploads:
+            return {
+                "success": False,
+                "error": f"No upload history found for season {kvk_season_id}"
+            }
+
+        # Extract this player's data from each upload
+        timeline = []
+        for upload in all_uploads:
+            players = upload.get('players', [])
+
+            # Find this player in this upload
+            player_data = next(
+                (p for p in players if p.get('governor_id') == governor_id),
+                None
+            )
+
+            if player_data:
+                timeline.append({
+                    "upload_id": str(upload['_id']),
+                    "file_name": upload.get('file_name', 'Unknown'),
+                    "description": upload.get('description', ''),
+                    "timestamp": upload.get('timestamp'),
+                    "rank": player_data.get('rank', 0),
+                    "stats": player_data.get('stats', {}),
+                    "delta": player_data.get('delta', {})
+                })
+
+        if not timeline:
+            return {
+                "success": False,
+                "error": f"Player {governor_id} not found in any uploads for season {kvk_season_id}"
+            }
+
+        # Get baseline for comparison
+        baseline_collection = Database.get_collection("baselines")
+        baseline = await baseline_collection.find_one({"kvk_season_id": kvk_season_id})
+
+        baseline_data = None
+        if baseline:
+            baseline_players = baseline.get('players', [])
+            baseline_player = next(
+                (p for p in baseline_players if p.get('governor_id') == governor_id),
+                None
+            )
+            if baseline_player:
+                baseline_data = {
+                    "timestamp": baseline.get('timestamp'),
+                    "stats": baseline_player.get('stats', {})
+                }
+
+        return {
+            "success": True,
+            "kvk_season_id": kvk_season_id,
+            "governor_id": governor_id,
+            "governor_name": timeline[0].get('stats', {}).get('governor_name', 'Unknown') if timeline else 'Unknown',
+            "baseline": baseline_data,
+            "timeline_count": len(timeline),
+            "timeline": timeline
         }
 
 

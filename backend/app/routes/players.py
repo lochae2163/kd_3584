@@ -7,14 +7,14 @@ router = APIRouter(prefix="/api", tags=["Public API"])
 @router.get("/leaderboard")
 async def get_leaderboard(
     kvk_season_id: str = Query(default="season_1"),
-    sort_by: str = Query(default="kill_points"),
+    sort_by: str = Query(default="kill_points_gained"),
     limit: int = Query(default=100, le=500)
 ):
     """
     Get leaderboard with deltas from baseline.
 
     - sort_by: kill_points_gained, deads_gained, kill_points, power, t5_kills, t4_kills, deads
-    - limit: max number of players to return
+    - limit: max number of players to return (default: ranked by kill_points_gained)
     """
     result = await ml_service.get_leaderboard(
         kvk_season_id=kvk_season_id,

@@ -50,14 +50,10 @@ class KvKBot(commands.Cog):
             await self.session.close()
 
     def format_number(self, num):
-        """Format number with commas"""
-        if num >= 1_000_000_000:
-            return f"{num / 1_000_000_000:.2f}B"
-        elif num >= 1_000_000:
-            return f"{num / 1_000_000:.2f}M"
-        elif num >= 1_000:
-            return f"{num / 1_000:.2f}K"
-        return str(num)
+        """Format number with commas for readability"""
+        if num is None or num == 0:
+            return "0"
+        return f"{int(num):,}"
 
     def format_delta(self, value):
         """Format delta value with color indicators
@@ -69,13 +65,13 @@ class KvKBot(commands.Cog):
             Green circle for positive (+), red circle for negative (-)
         """
         if value == 0:
-            return f"{self.format_number(value)}"
+            return f"(+0)"
         elif value > 0:
             # Positive change = green
-            return f"🟢 +{self.format_number(value)}"
+            return f"🟢 (+{self.format_number(value)})"
         else:
             # Negative change = red
-            return f"🔴 {self.format_number(value)}"
+            return f"🔴 ({self.format_number(value)})"
 
     async def generate_stats_image(self, player_data):
         """Generate beautiful stats card image"""
@@ -205,7 +201,7 @@ class KvKBot(commands.Cog):
             timestamp=datetime.utcnow()
         )
 
-        # Current Stats with deltas in parentheses - 2 per row for better spacing
+        # Format stats with deltas in brackets
         kp_total = self.format_number(stats.get('kill_points', 0))
         kp_delta = self.format_delta(delta.get('kill_points', 0))
 
@@ -223,38 +219,32 @@ class KvKBot(commands.Cog):
 
         embed.add_field(
             name="⚔️ **Kill Points**",
-            value=f"```{kp_total}```({kp_delta})",
-            inline=True
+            value=f"`{kp_total}` {kp_delta}",
+            inline=False
         )
 
         embed.add_field(
             name="💪 **Power**",
-            value=f"```{power_total}```({power_delta})",
-            inline=True
+            value=f"`{power_total}` {power_delta}",
+            inline=False
         )
-
-        # Empty field for spacing
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         embed.add_field(
             name="☠️ **Deaths**",
-            value=f"```{deaths_total}```({deaths_delta})",
-            inline=True
+            value=f"`{deaths_total}` {deaths_delta}",
+            inline=False
         )
 
         embed.add_field(
             name="🎯 **T5 Kills**",
-            value=f"```{t5_total}```({t5_delta})",
-            inline=True
+            value=f"`{t5_total}` {t5_delta}",
+            inline=False
         )
-
-        # Empty field for spacing
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
 
         embed.add_field(
             name="⚡ **T4 Kills**",
-            value=f"```{t4_total}```({t4_delta})",
-            inline=True
+            value=f"`{t4_total}` {t4_delta}",
+            inline=False
         )
 
         embed.set_footer(text="Kingdom 3584 KvK Tracker")

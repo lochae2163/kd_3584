@@ -6,6 +6,8 @@ import os
 from datetime import datetime
 from typing import Optional
 import logging
+from PIL import Image, ImageDraw, ImageFont
+import io
 
 # Setup logging
 logging.basicConfig(
@@ -75,89 +77,115 @@ class KvKBot(commands.Cog):
             # Negative change = red
             return f"🔴 {self.format_number(value)}"
 
-    def create_player_embed(self, player_data):
-        """Create rich embed for player stats"""
+    async def generate_stats_image(self, player_data):
+        """Generate beautiful stats card image"""
+        # Image dimensions
+        WIDTH, HEIGHT = 900, 700
+
+        # Create image with dark gradient background
+        img = Image.new('RGB', (WIDTH, HEIGHT), color='#0f1419')
+        draw = ImageDraw.Draw(img)
+
+        # Draw gradient background effect
+        for y in range(HEIGHT):
+            r = int(15 + (26 - 15) * y / HEIGHT)
+            g = int(20 + (33 - 20) * y / HEIGHT)
+            b = int(25 + (46 - 25) * y / HEIGHT)
+            draw.line([(0, y), (WIDTH, y)], fill=(r, g, b))
+
+        # Try to load fonts, fallback to default
+        try:
+            # Use DejaVu fonts (available on most Linux systems including Railway)
+            font_header = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 24)
+            font_title = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', 48)
+            font_subtitle = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 32)
+            font_stats = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 28)
+            font_label = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 24)
+            font_small = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', 20)
+        except:
+            # Fallback to default font
+            font_header = ImageFont.load_default()
+            font_title = ImageFont.load_default()
+            font_subtitle = ImageFont.load_default()
+            font_stats = ImageFont.load_default()
+            font_label = ImageFont.load_default()
+            font_small = ImageFont.load_default()
+
         stats = player_data.get('stats', {})
         delta = player_data.get('delta', {})
         rank = player_data.get('rank', 'N/A')
 
-        # Determine rank emoji
-        if rank == 1:
-            rank_display = "🥇 #1"
-        elif rank == 2:
-            rank_display = "🥈 #2"
-        elif rank == 3:
-            rank_display = "🥉 #3"
-        else:
-            rank_display = f"#{rank}"
+        # Draw header bar
+        draw.rectangle([(0, 0), (WIDTH, 80)], fill='#1a1f2e')
+        draw.text((WIDTH//2, 40), "KINGDOM 3584 KvK TRACKER", fill='#00d9ff', font=font_header, anchor='mm')
 
-        embed = discord.Embed(
-            title=f"📊 {player_data['governor_name']}",
-            description=f"**Rank:** {rank_display} • **Governor ID:** {player_data['governor_id']}\n━━━━━━━━━━━━━━━━━━━━━━━━",
-            color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
-        )
+        # Draw rank badge
+        rank_emoji = "🥇" if rank == 1 else "🥈" if rank == 2 else "🥉" if rank == 3 else "🏆"
+        rank_text = f"RANK #{rank}"
+        draw.text((WIDTH//2, 130), f"{rank_emoji}  {rank_text}  {rank_emoji}", fill='#ffd700', font=font_title, anchor='mm')
 
-        # Current Stats with deltas in parentheses - 2 per row for better spacing
-        kp_total = self.format_number(stats.get('kill_points', 0))
-        kp_delta = self.format_delta(delta.get('kill_points', 0))
+        # Draw player name
+        draw.text((WIDTH//2, 195), player_data['governor_name'], fill='#ffffff', font=font_subtitle, anchor='mm')
+        draw.text((WIDTH//2, 235), f"ID: {player_data['governor_id']}", fill='#888888', font=font_small, anchor='mm')
 
-        power_total = self.format_number(stats.get('power', 0))
-        power_delta = self.format_delta(delta.get('power', 0))
+        # Draw separator line
+        draw.line([(60, 270), (WIDTH-60, 270)], fill='#444444', width=3)
 
-        deaths_total = self.format_number(stats.get('deads', 0))
-        deaths_delta = self.format_delta(delta.get('deads', 0))
+        # Draw stats section
+        y_pos = 320
+        stat_configs = [
+            ('⚔️  Kill Points', 'kill_points'),
+            ('💪 Power', 'power'),
+            ('☠️  Deaths', 'deads'),
+            ('🎯 T5 Kills', 't5_kills'),
+            ('⚡ T4 Kills', 't4_kills'),
+        ]
 
-        t5_total = self.format_number(stats.get('t5_kills', 0))
-        t5_delta = self.format_delta(delta.get('t5_kills', 0))
+        for emoji_label, field in stat_configs:
+            stat_value = stats.get(field, 0)
+            delta_value = delta.get(field, 0)
 
-        t4_total = self.format_number(stats.get('t4_kills', 0))
-        t4_delta = self.format_delta(delta.get('t4_kills', 0))
+            # Determine delta color
+            if delta_value > 0:
+                delta_color = '#00ff88'  # Green
+                delta_prefix = '+'
+            elif delta_value < 0:
+                delta_color = '#ff4444'  # Red
+                delta_prefix = ''
+            else:
+                delta_color = '#888888'  # Gray
+                delta_prefix = ''
 
-        embed.add_field(
-            name="⚔️ **Kill Points**",
-            value=f"```{kp_total}```({kp_delta})",
-            inline=True
-        )
+            # Format numbers
+            stat_formatted = self.format_number(stat_value)
+            delta_formatted = self.format_number(abs(delta_value))
 
-        embed.add_field(
-            name="💪 **Power**",
-            value=f"```{power_total}```({power_delta})",
-            inline=True
-        )
+            # Draw label
+            draw.text((80, y_pos), emoji_label, fill='#aaaaaa', font=font_label, anchor='lm')
 
-        # Empty field for spacing
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
+            # Draw stat value (right-aligned)
+            draw.text((WIDTH - 320, y_pos), stat_formatted, fill='#00d9ff', font=font_stats, anchor='rm')
 
-        embed.add_field(
-            name="☠️ **Deaths**",
-            value=f"```{deaths_total}```({deaths_delta})",
-            inline=True
-        )
+            # Draw delta (in parentheses)
+            delta_text = f"({delta_prefix}{delta_formatted})"
+            draw.text((WIDTH - 80, y_pos), delta_text, fill=delta_color, font=font_label, anchor='rm')
 
-        embed.add_field(
-            name="🎯 **T5 Kills**",
-            value=f"```{t5_total}```({t5_delta})",
-            inline=True
-        )
+            y_pos += 65
 
-        # Empty field for spacing
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
+        # Draw bottom separator
+        draw.line([(60, HEIGHT-100), (WIDTH-60, HEIGHT-100)], fill='#444444', width=3)
 
-        embed.add_field(
-            name="⚡ **T4 Kills**",
-            value=f"```{t4_total}```({t4_delta})",
-            inline=True
-        )
+        # Draw footer
+        footer_text = f"Season 1 • {datetime.now().strftime('%B %d, %Y')}"
+        draw.text((WIDTH//2, HEIGHT-60), footer_text, fill='#888888', font=font_small, anchor='mm')
+        draw.text((WIDTH//2, HEIGHT-30), "kd-3584.vercel.app", fill='#00d9ff', font=font_small, anchor='mm')
 
-        embed.set_footer(text="Kingdom 3584 KvK Tracker")
-
-        return embed
+        return img
 
     @app_commands.command(name="stats", description="Get your KvK stats by Governor ID")
     @app_commands.describe(governor_id="Your Governor ID (e.g., 53242709)")
     async def stats(self, interaction: discord.Interaction, governor_id: str):
-        """Get player stats by Governor ID"""
+        """Get player stats by Governor ID as a beautiful image"""
         await interaction.response.defer()
 
         try:
@@ -181,10 +209,24 @@ class KvKBot(commands.Cog):
                 data = await response.json()
                 # Extract player data from response
                 player_data = data.get('player', data)
-                embed = self.create_player_embed(player_data)
-                await interaction.followup.send(embed=embed)
+
+                # Generate stats image
+                img = await self.generate_stats_image(player_data)
+
+                # Save to buffer
+                buffer = io.BytesIO()
+                img.save(buffer, format='PNG')
+                buffer.seek(0)
+
+                # Send as Discord file
+                file = discord.File(buffer, filename=f'stats_{governor_id}.png')
+                await interaction.followup.send(
+                    content=f"📊 **Stats for {player_data['governor_name']}** (Right-click to save image)",
+                    file=file
+                )
 
         except Exception as e:
+            logger.error(f"Error generating stats image: {e}", exc_info=True)
             await interaction.followup.send(
                 f"❌ Error: {str(e)}",
                 ephemeral=True

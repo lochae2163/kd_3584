@@ -166,8 +166,8 @@ class MLService:
             )
             logger.info(f"Updated baseline with {len(new_players)} new players for season {kvk_season_id}")
 
-        # Rank players by kill_points
-        ranked_players = self.model.rank_players(players_with_deltas, "kill_points")
+        # Rank players by kill_points_gained (delta)
+        ranked_players = self.model.rank_players(players_with_deltas, "kill_points_gained")
 
         # Calculate summary (using players_with_deltas to include delta info)
         summary = self.model.calculate_summary_stats(players_with_deltas)
@@ -273,8 +273,8 @@ class MLService:
             )
             logger.info(f"Updated baseline with {len(new_players)} new players for season {kvk_season_id}")
 
-        # Rank players by kill_points
-        ranked_players = self.model.rank_players(players_with_deltas, "kill_points")
+        # Rank players by kill_points_gained (delta)
+        ranked_players = self.model.rank_players(players_with_deltas, "kill_points_gained")
 
         # Calculate summary (using players_with_deltas to include delta info)
         summary = self.model.calculate_summary_stats(players_with_deltas)
@@ -421,8 +421,8 @@ class MLService:
                 "t5_kills": 0
             }
             
-            # Calculate rank
-            ranked = self.model.rank_players(players, "kill_points")
+            # Calculate rank by kill_points_gained (delta)
+            ranked = self.model.rank_players(players, "kill_points_gained")
             for p in ranked:
                 if p.get('governor_id') == governor_id:
                     player_copy['rank'] = p.get('rank', 0)

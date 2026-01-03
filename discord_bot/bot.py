@@ -182,10 +182,89 @@ class KvKBot(commands.Cog):
 
         return img
 
+    def create_player_embed(self, player_data):
+        """Create rich embed for player stats"""
+        stats = player_data.get('stats', {})
+        delta = player_data.get('delta', {})
+        rank = player_data.get('rank', 'N/A')
+
+        # Determine rank emoji
+        if rank == 1:
+            rank_display = "🥇 #1"
+        elif rank == 2:
+            rank_display = "🥈 #2"
+        elif rank == 3:
+            rank_display = "🥉 #3"
+        else:
+            rank_display = f"#{rank}"
+
+        embed = discord.Embed(
+            title=f"📊 {player_data['governor_name']}",
+            description=f"**Rank:** {rank_display} • **Governor ID:** {player_data['governor_id']}\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            color=discord.Color.blue(),
+            timestamp=datetime.utcnow()
+        )
+
+        # Current Stats with deltas in parentheses - 2 per row for better spacing
+        kp_total = self.format_number(stats.get('kill_points', 0))
+        kp_delta = self.format_delta(delta.get('kill_points', 0))
+
+        power_total = self.format_number(stats.get('power', 0))
+        power_delta = self.format_delta(delta.get('power', 0))
+
+        deaths_total = self.format_number(stats.get('deads', 0))
+        deaths_delta = self.format_delta(delta.get('deads', 0))
+
+        t5_total = self.format_number(stats.get('t5_kills', 0))
+        t5_delta = self.format_delta(delta.get('t5_kills', 0))
+
+        t4_total = self.format_number(stats.get('t4_kills', 0))
+        t4_delta = self.format_delta(delta.get('t4_kills', 0))
+
+        embed.add_field(
+            name="⚔️ **Kill Points**",
+            value=f"```{kp_total}```({kp_delta})",
+            inline=True
+        )
+
+        embed.add_field(
+            name="💪 **Power**",
+            value=f"```{power_total}```({power_delta})",
+            inline=True
+        )
+
+        # Empty field for spacing
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
+
+        embed.add_field(
+            name="☠️ **Deaths**",
+            value=f"```{deaths_total}```({deaths_delta})",
+            inline=True
+        )
+
+        embed.add_field(
+            name="🎯 **T5 Kills**",
+            value=f"```{t5_total}```({t5_delta})",
+            inline=True
+        )
+
+        # Empty field for spacing
+        embed.add_field(name="\u200b", value="\u200b", inline=False)
+
+        embed.add_field(
+            name="⚡ **T4 Kills**",
+            value=f"```{t4_total}```({t4_delta})",
+            inline=True
+        )
+
+        embed.set_footer(text="Kingdom 3584 KvK Tracker")
+
+        return embed
+
     @app_commands.command(name="stats", description="Get your KvK stats by Governor ID")
     @app_commands.describe(governor_id="Your Governor ID (e.g., 53242709)")
     async def stats(self, interaction: discord.Interaction, governor_id: str):
-        """Get player stats by Governor ID as a beautiful image"""
+        """Get player stats by Governor ID"""
         await interaction.response.defer()
 
         try:
@@ -209,24 +288,10 @@ class KvKBot(commands.Cog):
                 data = await response.json()
                 # Extract player data from response
                 player_data = data.get('player', data)
-
-                # Generate stats image
-                img = await self.generate_stats_image(player_data)
-
-                # Save to buffer
-                buffer = io.BytesIO()
-                img.save(buffer, format='PNG')
-                buffer.seek(0)
-
-                # Send as Discord file
-                file = discord.File(buffer, filename=f'stats_{governor_id}.png')
-                await interaction.followup.send(
-                    content=f"📊 **Stats for {player_data['governor_name']}** (Right-click to save image)",
-                    file=file
-                )
+                embed = self.create_player_embed(player_data)
+                await interaction.followup.send(embed=embed)
 
         except Exception as e:
-            logger.error(f"Error generating stats image: {e}", exc_info=True)
             await interaction.followup.send(
                 f"❌ Error: {str(e)}",
                 ephemeral=True

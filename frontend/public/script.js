@@ -177,6 +177,11 @@ async function loadStats() {
                     <div class="name">${tops.kill_points?.name || 'N/A'}</div>
                     <div class="stat">${formatShortNumber(tops.kill_points?.value)}</div>
                 </div>
+                <div class="top-card blue">
+                    <div class="title">💎 Top Power</div>
+                    <div class="name">${tops.power?.name || 'N/A'}</div>
+                    <div class="stat">${formatShortNumber(tops.power?.value)}</div>
+                </div>
                 <div class="top-card purple">
                     <div class="title">⚔️ T5 Kills Gained</div>
                     <div class="name">${tops.t5_kills?.name || 'N/A'}</div>
@@ -186,11 +191,6 @@ async function loadStats() {
                     <div class="title">🎖️ T4 Kills Gained</div>
                     <div class="name">${tops.t4_kills?.name || 'N/A'}</div>
                     <div class="stat">${formatShortNumber(tops.t4_kills?.value)}</div>
-                </div>
-                <div class="top-card red">
-                    <div class="title">💀 Deaths Gained</div>
-                    <div class="name">${tops.deads?.name || 'N/A'}</div>
-                    <div class="stat">${formatShortNumber(tops.deads?.value)}</div>
                 </div>
             `;
         }

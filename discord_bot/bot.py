@@ -623,6 +623,11 @@ async def on_ready():
     """Bot startup event"""
     print(f'✅ Logged in as {bot.user} (ID: {bot.user.id})')
     print(f'📊 Connected to {len(bot.guilds)} guilds')
+
+    # List all guilds
+    for guild in bot.guilds:
+        print(f'   - {guild.name} (ID: {guild.id})')
+
     print('🚀 Bot is ready!')
 
     # Sync commands to guilds for instant updates (no cache delay)
@@ -639,6 +644,20 @@ async def on_ready():
         print('✅ All guilds synced successfully')
     except Exception as e:
         print(f'❌ Failed to sync commands: {e}')
+
+
+@bot.event
+async def on_guild_join(guild):
+    """Handle when bot joins a new guild"""
+    print(f'🎉 Joined new guild: {guild.name} (ID: {guild.id})')
+
+    try:
+        # Copy and sync commands immediately
+        bot.tree.copy_global_to(guild=discord.Object(id=guild.id))
+        synced = await bot.tree.sync(guild=discord.Object(id=guild.id))
+        print(f'✅ Synced {len(synced)} command(s) to new guild: {guild.name}')
+    except Exception as e:
+        print(f'❌ Failed to sync to new guild {guild.name}: {e}')
 
 
 @bot.tree.error

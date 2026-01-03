@@ -692,39 +692,49 @@ class KvKBot(commands.Cog):
 
         embed = discord.Embed(
             title="📖 Kingdom 3584 KvK Tracker Bot",
-            description="Get your KvK stats directly in Discord!\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            description="Track your KvK performance with powerful commands!\n━━━━━━━━━━━━━━━━━━━━━━━━",
             color=discord.Color.blue()
         )
 
-        # Stats command
+        # Stats command - Updated with autocomplete
         embed.add_field(
-            name="⚔️ **/stats <governor_id>**",
-            value="View your complete KvK statistics including:\n"
-                  "• Kill Points (total and gained)\n"
-                  "• Power (total and gained)\n"
-                  "• Deaths, T5/T4 Kills\n"
-                  "• Current rank\n"
-                  "• Color-coded deltas (🟢 positive, 🔴 negative)\n\n"
-                  "**Example:** `/stats 53242709` \n━━━━━━━━━━━━━━━━━━━━━━━━",
+            name="⚔️ **/stats <player>** ✨ NEW: Smart Search!",
+            value="View complete KvK statistics with **autocomplete**:\n\n"
+                  "**Features:**\n"
+                  "• 🔍 **Smart autocomplete** - Search by name or ID\n"
+                  "• 📊 **Full stats** - KP, Power, Deaths, T5/T4 Kills\n"
+                  "• 🏆 **Current rank** with medal emoji\n"
+                  "• 🟢🔴 **Color-coded deltas** (gained stats)\n"
+                  "• 🔢 **Readable numbers** - 1.2B, 850M format\n\n"
+                  "**How to use:**\n"
+                  "1. Type `/stats` and click the `player` field\n"
+                  "2. Start typing a name or ID - suggestions appear!\n"
+                  "3. Select from dropdown or type full ID\n\n"
+                  "**Examples:**\n"
+                  "• Type \"shino\" → see all Shino players\n"
+                  "• Type \"51540\" → find player by ID\n"
+                  "• Empty field → shows top 25 ranked players\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
-        # Top command
+        # Top command - Updated with all sort options
         embed.add_field(
             name="🏆 **/top [sort_by] [limit]**",
-            value="Display top players leaderboard\n\n"
+            value="Display top players leaderboard with flexible sorting:\n\n"
                   "**Sort Options:**\n"
-                  "• `kill_points_gained` - KP gained since baseline\n"
-                  "• `deaths_gained` - Deaths gained since baseline\n"
-                  "• `power` - Total power\n"
-                  "• `kill_points` - Total kill points\n"
-                  "• `t5_kills` - Total T5 kills\n"
-                  "• `t4_kills` - Total T4 kills\n\n"
+                  "• `kill_points_gained` - KP gained (⚔️ default)\n"
+                  "• `deaths_gained` - Deaths gained (☠️)\n"
+                  "• `t5_kills_gained` - T5 kills gained (🎯)\n"
+                  "• `t4_kills_gained` - T4 kills gained (⚡)\n"
+                  "• `power` - Total power (💪)\n"
+                  "• `kill_points` - Total kill points (⚔️)\n"
+                  "• `t5_kills` - Total T5 kills (🎯)\n"
+                  "• `t4_kills` - Total T4 kills (⚡)\n\n"
                   "**Limit:** 1-25 players (default: 10)\n\n"
                   "**Examples:**\n"
-                  "`/top kill_points_gained 10`\n"
-                  "`/top power 25`\n"
-                  "`/top t5_kills 15` \n━━━━━━━━━━━━━━━━━━━━━━━━",
+                  "• `/top` - Top 10 by KP gained\n"
+                  "• `/top power 25` - Top 25 by power\n"
+                  "• `/top t5_kills_gained 15` - Top 15 T5 farmers\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
@@ -732,10 +742,10 @@ class KvKBot(commands.Cog):
         embed.add_field(
             name="📊 **/summary**",
             value="Kingdom-wide statistics overview:\n"
-                  "• Total kingdom stats\n"
-                  "• Per-player averages\n"
-                  "• Top performers in each category\n"
-                  "• Data collection period\n\n"
+                  "• 🏰 **Total kingdom stats** - Combined KP, Power, Kills\n"
+                  "• 📈 **Per-player averages** - Average stats per governor\n"
+                  "• 🏆 **Top performers** - Best in each category\n"
+                  "• 📅 **Data period** - Baseline & last update dates\n\n"
                   "**Example:** `/summary`\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
@@ -744,37 +754,37 @@ class KvKBot(commands.Cog):
         embed.add_field(
             name="⚔️ **/compare <player1_id> <player2_id>**",
             value="Compare two players side-by-side:\n"
-                  "• All stats with deltas\n"
-                  "• Winner indicators for each metric\n"
-                  "• Rank comparison\n\n"
+                  "• 📊 **All stats** with deltas shown\n"
+                  "• 🏅 **Winner indicators** for each metric\n"
+                  "• 🏆 **Rank comparison** - Who's higher?\n"
+                  "• 💡 **Head-to-head** battle analysis\n\n"
                   "**Example:** `/compare 53242709 51540567`\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
-        # Help command
+        # Additional info - Updated
         embed.add_field(
-            name="❓ **/help**",
-            value="Show this help message\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            name="💡 Pro Tips",
+            value="• 🔍 **Use autocomplete!** Start typing names in `/stats`\n"
+                  "• 🎯 **Find Governor ID:** In-game → Tap your avatar\n"
+                  "• 📊 **Deltas:** Show change since baseline (starting point)\n"
+                  "• 🟢 **Green** = Positive change (good for KP, bad for deaths)\n"
+                  "• 🔴 **Red** = Negative change\n"
+                  "• 🔄 **Data updates:** When admin uploads new scans\n"
+                  "• 🌐 **Web version:** https://kd-3584.vercel.app\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
-        # Additional info
+        # Links section
         embed.add_field(
-            name="💡 Tips",
-            value="• Find your Governor ID in-game: Tap your avatar\n"
-                  "• All deltas show change since baseline\n"
-                  "• 🟢 = positive change, 🔴 = negative change\n"
-                  "• Data updates when admin uploads new scans\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            name="🔗 Useful Links",
+            value="• 🌐 **Leaderboard:** [kd-3584.vercel.app](https://kd-3584.vercel.app)\n"
+                  "• 🔧 **API Status:** [Railway Dashboard](https://kd3584-production.up.railway.app/)\n"
+                  "• 📖 **Full Documentation:** Type `/help` anytime",
             inline=False
         )
 
-        embed.add_field(
-            name="🔗 Web Dashboard",
-            value="[View Full Leaderboard](https://kd-3584.vercel.app)",
-            inline=False
-        )
-
-        embed.set_footer(text="Kingdom 3584 KvK Tracker • Made with ❤️ for the alliance")
+        embed.set_footer(text="Kingdom 3584 KvK Tracker • Season 1")
         await interaction.followup.send(embed=embed, ephemeral=True)
 
 

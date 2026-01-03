@@ -50,10 +50,20 @@ class KvKBot(commands.Cog):
             await self.session.close()
 
     def format_number(self, num):
-        """Format number with commas for readability"""
+        """Format number: abbreviated (B/M) for millions+, full with commas for under 1M"""
         if num is None or num == 0:
             return "0"
-        return f"{int(num):,}"
+
+        num = int(num)
+
+        # For 1 million and above, use abbreviated format
+        if abs(num) >= 1_000_000_000:
+            return f"{num / 1_000_000_000:.1f}B"
+        elif abs(num) >= 1_000_000:
+            return f"{num / 1_000_000:.1f}M"
+        else:
+            # For under 1 million, show full number with commas
+            return f"{num:,}"
 
     def format_delta(self, value):
         """Format delta value with color indicators
@@ -71,7 +81,7 @@ class KvKBot(commands.Cog):
             return f"🟢 (+{self.format_number(value)})"
         else:
             # Negative change = red
-            return f"🔴 ({self.format_number(value)})"
+            return f"🔴 ({self.format_number(abs(value))})"
 
     async def generate_stats_image(self, player_data):
         """Generate beautiful stats card image"""
@@ -219,31 +229,31 @@ class KvKBot(commands.Cog):
 
         embed.add_field(
             name="⚔️ **Kill Points**",
-            value=f"`{kp_total}` {kp_delta}",
+            value=f"`{kp_total}` {kp_delta}\n\u200b",
             inline=False
         )
 
         embed.add_field(
             name="💪 **Power**",
-            value=f"`{power_total}` {power_delta}",
+            value=f"`{power_total}` {power_delta}\n\u200b",
             inline=False
         )
 
         embed.add_field(
             name="☠️ **Deaths**",
-            value=f"`{deaths_total}` {deaths_delta}",
+            value=f"`{deaths_total}` {deaths_delta}\n\u200b",
             inline=False
         )
 
         embed.add_field(
             name="🎯 **T5 Kills**",
-            value=f"`{t5_total}` {t5_delta}",
+            value=f"`{t5_total}` {t5_delta}\n\u200b",
             inline=False
         )
 
         embed.add_field(
             name="⚡ **T4 Kills**",
-            value=f"`{t4_total}` {t4_delta}",
+            value=f"`{t4_total}` {t4_delta}\n\u200b",
             inline=False
         )
 

@@ -511,43 +511,64 @@ class KvKDataModel:
     def calculate_summary_stats(self, players: List[Dict]) -> Dict:
         """
         Calculate summary statistics for a list of players.
-        
+
+        For top_players:
+        - kill_points: Uses delta (gained)
+        - t5_kills: Uses delta (gained)
+        - power: Uses total stats (overall power)
+        - Others: Use total stats
+
         Args:
-            players: List of player dicts
-            
+            players: List of player dicts (with stats and delta)
+
         Returns:
             Dict with summary statistics
         """
         if not players:
             return {}
-        
+
         # Convert to dataframe for easy stats calculation
         stats_list = [p.get('stats', {}) for p in players]
-        df = pd.DataFrame(stats_list)
-        
+        df_stats = pd.DataFrame(stats_list)
+
+        # Also get delta dataframe for specific top players
+        delta_list = [p.get('delta', {}) for p in players]
+        df_delta = pd.DataFrame(delta_list)
+
         summary = {
             "player_count": len(players),
             "totals": {},
             "averages": {},
             "top_players": {}
         }
-        
-        # Calculate totals and averages
+
+        # Calculate totals and averages (always use stats)
         for col in self.NUMERIC_COLUMNS:
-            if col in df.columns:
-                summary["totals"][col] = int(df[col].sum())
-                summary["averages"][col] = int(df[col].mean())
-        
-        # Find top players for each stat
+            if col in df_stats.columns:
+                summary["totals"][col] = int(df_stats[col].sum())
+                summary["averages"][col] = int(df_stats[col].mean())
+
+        # Find top players - use delta for kill_points and t5_kills, stats for others
         for col in self.NUMERIC_COLUMNS:
-            if col in df.columns:
-                idx = df[col].idxmax()
-                summary["top_players"][col] = {
-                    "name": players[idx].get('governor_name'),
-                    "governor_id": players[idx].get('governor_id'),
-                    "value": int(df.loc[idx, col])
-                }
-        
+            # Use delta for kill_points and t5_kills
+            if col in ['kill_points', 't5_kills']:
+                if col in df_delta.columns:
+                    idx = df_delta[col].idxmax()
+                    summary["top_players"][col] = {
+                        "name": players[idx].get('governor_name'),
+                        "governor_id": players[idx].get('governor_id'),
+                        "value": int(df_delta.loc[idx, col])  # Delta value
+                    }
+            # Use stats for power and others
+            else:
+                if col in df_stats.columns:
+                    idx = df_stats[col].idxmax()
+                    summary["top_players"][col] = {
+                        "name": players[idx].get('governor_name'),
+                        "governor_id": players[idx].get('governor_id'),
+                        "value": int(df_stats.loc[idx, col])  # Stats value
+                    }
+
         return summary
     
     def rank_players(

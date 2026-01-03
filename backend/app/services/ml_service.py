@@ -169,8 +169,8 @@ class MLService:
         # Rank players by kill_points
         ranked_players = self.model.rank_players(players_with_deltas, "kill_points")
 
-        # Calculate summary
-        summary = self.model.calculate_summary_stats(result['players'])
+        # Calculate summary (using players_with_deltas to include delta info)
+        summary = self.model.calculate_summary_stats(players_with_deltas)
 
         timestamp = datetime.utcnow()
 
@@ -276,8 +276,8 @@ class MLService:
         # Rank players by kill_points
         ranked_players = self.model.rank_players(players_with_deltas, "kill_points")
 
-        # Calculate summary
-        summary = self.model.calculate_summary_stats(result['players'])
+        # Calculate summary (using players_with_deltas to include delta info)
+        summary = self.model.calculate_summary_stats(players_with_deltas)
 
         timestamp = datetime.utcnow()
 

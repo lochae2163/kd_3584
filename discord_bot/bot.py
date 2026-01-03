@@ -334,17 +334,22 @@ class KvKBot(commands.Cog):
         await interaction.response.defer()
 
         try:
-            # Player parameter is the governor_id from autocomplete
+            # First, try as governor_id
             url = f"{API_URL}/api/player/{player}?kvk_season_id={KVK_SEASON_ID}"
 
             async with self.session.get(url) as response:
-                if response.status == 404:
-                    await interaction.followup.send(
-                        f"❌ Governor ID `{player}` not found in the current KvK season.",
-                        ephemeral=True
-                    )
+                if response.status == 200:
+                    data = await response.json()
+                    player_data = data.get('player', data)
+                    embed = self.create_player_embed(player_data)
+                    await interaction.followup.send(embed=embed)
                     return
 
+            # If not found by ID, try searching by name
+            logger.info(f"Player '{player}' not found by ID, searching by name...")
+            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=1000"
+
+            async with self.session.get(url) as response:
                 if response.status != 200:
                     await interaction.followup.send(
                         "❌ Failed to fetch stats. Please try again later.",
@@ -353,12 +358,35 @@ class KvKBot(commands.Cog):
                     return
 
                 data = await response.json()
-                # Extract player data from response
-                player_data = data.get('player', data)
+                players = data.get('leaderboard', [])
+
+                # Search for player by name (case-insensitive)
+                player_lower = player.lower().strip()
+                matches = [p for p in players if player_lower in p['governor_name'].lower()]
+
+                if not matches:
+                    await interaction.followup.send(
+                        f"❌ No player found matching `{player}`. Try using the autocomplete suggestions!",
+                        ephemeral=True
+                    )
+                    return
+
+                if len(matches) > 1:
+                    # Multiple matches - show them
+                    match_list = "\n".join([f"• {p['governor_name']} (ID: {p['governor_id']})" for p in matches[:5]])
+                    await interaction.followup.send(
+                        f"⚠️ Found {len(matches)} players matching `{player}`:\n{match_list}\n\nPlease use `/stats` with the exact Governor ID.",
+                        ephemeral=True
+                    )
+                    return
+
+                # Exact match found
+                player_data = matches[0]
                 embed = self.create_player_embed(player_data)
                 await interaction.followup.send(embed=embed)
 
         except Exception as e:
+            logger.error(f"Stats command error: {e}", exc_info=True)
             await interaction.followup.send(
                 f"❌ Error: {str(e)}",
                 ephemeral=True

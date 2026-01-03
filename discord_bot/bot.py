@@ -80,8 +80,8 @@ class KvKBot(commands.Cog):
             # Positive change = green
             return f"🟢 (+{self.format_number(value)})"
         else:
-            # Negative change = red
-            return f"🔴 ({self.format_number(abs(value))})"
+            # Negative change = red (keep the minus sign)
+            return f"🔴 (-{self.format_number(abs(value))})"
 
     async def generate_stats_image(self, player_data):
         """Generate beautiful stats card image"""

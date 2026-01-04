@@ -762,6 +762,34 @@ class KvKBot(commands.Cog):
             inline=False
         )
 
+        # History command - NEW
+        embed.add_field(
+            name="📜 **/history [limit]** ✨ NEW!",
+            value="View recent upload history for the season:\n"
+                  "• 📅 **Upload dates** - When data was collected\n"
+                  "• 📝 **Descriptions** - What each upload represents\n"
+                  "• 👥 **Player counts** - Active players tracked\n"
+                  "• ⚔️ **Total gains** - Kingdom-wide KP/Deaths/Kills\n\n"
+                  "**Limit:** 1-10 uploads (default: 5)\n"
+                  "**Note:** For full history, visit the website!\n\n"
+                  "**Example:** `/history 5`\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            inline=False
+        )
+
+        # Timeline command - NEW
+        embed.add_field(
+            name="📈 **/timeline <player>** ✨ NEW!",
+            value="Track player progress over time:\n"
+                  "• 📊 **Baseline** - Starting point stats\n"
+                  "• 📈 **Recent snapshots** - Last 5 uploads\n"
+                  "• 🏆 **Rank changes** - How rank evolved\n"
+                  "• ⚔️ **Growth stats** - Total KP gained\n"
+                  "• 🔍 **Autocomplete** - Search by name or ID\n\n"
+                  "**Note:** Full timeline with graphs on website!\n\n"
+                  "**Example:** `/timeline shino`\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            inline=False
+        )
+
         # Additional info - Updated
         embed.add_field(
             name="💡 Pro Tips",
@@ -788,14 +816,14 @@ class KvKBot(commands.Cog):
         await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name="history", description="View upload history for the current season")
-    @app_commands.describe(limit="Number of recent uploads to show (default: 10)")
-    async def history(self, interaction: discord.Interaction, limit: int = 10):
+    @app_commands.describe(limit="Number of recent uploads to show (default: 5)")
+    async def history(self, interaction: discord.Interaction, limit: int = 5):
         """Show upload history for the season"""
         await interaction.response.defer()
 
         try:
-            # Limit to reasonable range
-            limit = max(1, min(limit, 25))
+            # Limit to reasonable range (max 10 for Discord)
+            limit = max(1, min(limit, 10))
 
             url = f"{API_URL}/api/history?kvk_season_id={KVK_SEASON_ID}&limit={limit}"
 
@@ -824,28 +852,42 @@ class KvKBot(commands.Cog):
                     timestamp=datetime.utcnow()
                 )
 
-                for i, upload in enumerate(uploads, 1):
+                for upload in uploads:
                     timestamp = upload.get('timestamp')
                     if timestamp:
                         # Format timestamp nicely
                         dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00')) if isinstance(timestamp, str) else timestamp
-                        date_str = dt.strftime('%b %d, %Y %H:%M UTC')
+                        date_str = dt.strftime('%b %d, %H:%M')
                     else:
                         date_str = 'Unknown date'
 
                     description = upload.get('description', 'No description')
                     player_count = upload.get('player_count', 0)
-                    file_name = upload.get('file_name', 'Unknown')
 
                     summary = upload.get('summary', {})
-                    total_kp = summary.get('total_kill_points_gained', 0)
+                    total_kp_gained = summary.get('total_kill_points_gained', 0)
+                    total_deads_gained = summary.get('total_deads_gained', 0)
+                    total_t5_gained = summary.get('total_t5_kills_gained', 0)
+                    total_t4_gained = summary.get('total_t4_kills_gained', 0)
+
+                    # Build compact stats display
+                    stats_lines = []
+                    if total_kp_gained > 0:
+                        stats_lines.append(f"⚔️ KP: {self.format_number(total_kp_gained)}")
+                    if total_deads_gained > 0:
+                        stats_lines.append(f"☠️ Deaths: {self.format_number(total_deads_gained)}")
+                    if total_t5_gained > 0:
+                        stats_lines.append(f"🎯 T5: {self.format_number(total_t5_gained)}")
+                    if total_t4_gained > 0:
+                        stats_lines.append(f"⚡ T4: {self.format_number(total_t4_gained)}")
+
+                    stats_text = " • ".join(stats_lines) if stats_lines else "No delta data"
 
                     embed.add_field(
-                        name=f"#{i} • {file_name}",
-                        value=f"📅 {date_str}\n"
-                              f"📝 {description}\n"
+                        name=f"{date_str}",
+                        value=f"📝 {description}\n"
                               f"👥 {player_count} players\n"
-                              f"⚔️ {self.format_number(total_kp)} total KP gained\n\u200b",
+                              f"{stats_text}\n\u200b",
                         inline=False
                     )
 

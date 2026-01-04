@@ -334,6 +334,214 @@ function renderDeltaBarChart(delta) {
 }
 
 // ========================================
+// Load and Render Timeline
+// ========================================
+async function loadPlayerTimeline() {
+    try {
+        const response = await fetch(
+            `${API_URL}/api/player/${governorId}/timeline?kvk_season_id=${KVK_SEASON_ID}`
+        );
+
+        if (!response.ok) {
+            console.log('No timeline data available');
+            return;
+        }
+
+        const data = await response.json();
+
+        if (!data.success || !data.timeline || data.timeline.length < 2) {
+            console.log('Insufficient timeline data');
+            return;
+        }
+
+        // Show the timeline section
+        document.getElementById('timeline-section').style.display = 'block';
+
+        renderTimelineChart(data);
+        renderTimelineSnapshots(data);
+
+    } catch (error) {
+        console.error('Failed to load timeline:', error);
+    }
+}
+
+function renderTimelineChart(data) {
+    const timeline = data.timeline;
+    const ctx = document.getElementById('timeline-chart').getContext('2d');
+
+    // Extract data for chart
+    const labels = timeline.map(snapshot => {
+        const date = new Date(snapshot.timestamp);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+
+    const kpData = timeline.map(snapshot => snapshot.stats.kill_points);
+    const powerData = timeline.map(snapshot => snapshot.stats.power);
+    const rankData = timeline.map(snapshot => snapshot.rank);
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Kill Points',
+                    data: kpData,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    yAxisID: 'y',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Power',
+                    data: powerData,
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    yAxisID: 'y',
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Rank',
+                    data: rankData,
+                    borderColor: 'rgba(255, 206, 86, 1)',
+                    backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                    yAxisID: 'y1',
+                    tension: 0.3,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: '#e8eaed',
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.dataset.label === 'Rank') {
+                                label += '#' + context.parsed.y;
+                            } else {
+                                label += formatShortNumber(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    ticks: {
+                        color: '#e8eaed',
+                        callback: function(value) {
+                            return formatShortNumber(value);
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    reverse: true, // Lower rank number is better
+                    ticks: {
+                        color: '#e8eaed',
+                        callback: function(value) {
+                            return '#' + value;
+                        }
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#e8eaed'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderTimelineSnapshots(data) {
+    const timeline = data.timeline;
+    const snapshotsContainer = document.getElementById('timeline-snapshots');
+
+    let html = '<div class="snapshots-grid">';
+
+    timeline.forEach((snapshot, index) => {
+        const date = new Date(snapshot.timestamp);
+        const dateStr = date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const kpDelta = snapshot.delta.kill_points;
+        const deltaClass = getDeltaClass(kpDelta);
+        const deltaPrefix = getDeltaPrefix(kpDelta);
+
+        html += `
+            <div class="snapshot-card">
+                <div class="snapshot-header">
+                    <span class="snapshot-number">#${index + 1}</span>
+                    <span class="snapshot-rank">Rank #${snapshot.rank}</span>
+                </div>
+                <div class="snapshot-date">${dateStr}</div>
+                <div class="snapshot-description">${snapshot.description || 'No description'}</div>
+                <div class="snapshot-stats">
+                    <div class="snapshot-stat">
+                        <span class="stat-label">KP</span>
+                        <span class="stat-value">${formatShortNumber(snapshot.stats.kill_points)}</span>
+                        <span class="stat-delta ${deltaClass}">${deltaPrefix}${formatShortNumber(kpDelta)}</span>
+                    </div>
+                    <div class="snapshot-stat">
+                        <span class="stat-label">Power</span>
+                        <span class="stat-value">${formatShortNumber(snapshot.stats.power)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    snapshotsContainer.innerHTML = html;
+}
+
+// ========================================
 // Initialize
 // ========================================
-document.addEventListener('DOMContentLoaded', loadPlayerData);
+document.addEventListener('DOMContentLoaded', () => {
+    loadPlayerData();
+    loadPlayerTimeline();
+});

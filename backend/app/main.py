@@ -14,6 +14,7 @@ from app.routes.players import router as players_router
 from app.routes.seasons import router as seasons_router
 from app.routes.player_classification import router as player_classification_router
 from app.routes.verified_deaths import router as verified_deaths_router
+from app.routes.final_kvk import router as final_kvk_router
 
 
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +63,8 @@ app.include_router(seasons_router)
 app.include_router(player_classification_router)
 
 app.include_router(verified_deaths_router)
+
+app.include_router(final_kvk_router)
 
 @app.get("/")
 async def root():

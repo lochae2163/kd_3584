@@ -451,7 +451,7 @@ tbody tr:hover {
     }
 
     .stat-value {
-        font-size: 0.85rem;
+        font-size: 0.7rem;
     }
 
     /* Larger touch targets for mobile */
@@ -501,7 +501,7 @@ tr.rank-3 {
     color: #ffffff;
     font-weight: 500;
     white-space: nowrap;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
 }
 
 /* Delta indicators */

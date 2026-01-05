@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DKP Contribution Leaderboard - Kingdom 3584</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🏆 DKP Contribution Leaderboard</h1>
+            <p>Kingdom 3584 • Final KvK Rankings</p>
+            <div class="header-links">
+                <a href="index.html" class="back-link">← Back to Dashboard</a>
+                <a href="admin.html" class="back-link">⚙️ Admin Panel</a>
+            </div>
+        </header>
+
+        <!-- Season Info -->
+        <section class="season-info-banner">
+            <div id="season-info" class="season-info">
+                <div class="loading">Loading season information...</div>
+            </div>
+        </section>
+
+        <!-- DKP Formula Explanation -->
+        <section class="dkp-formula-section">
+            <h2>📊 DKP Formula</h2>
+            <div class="formula-explanation">
+                <div class="formula-item">
+                    <span class="formula-icon">⚔️</span>
+                    <span class="formula-text">T4 Kills × 1</span>
+                </div>
+                <div class="formula-item">
+                    <span class="formula-icon">⚔️⚔️</span>
+                    <span class="formula-text">T5 Kills × 2</span>
+                </div>
+                <div class="formula-item">
+                    <span class="formula-icon">💀</span>
+                    <span class="formula-text">T4 Deaths × 4</span>
+                </div>
+                <div class="formula-item">
+                    <span class="formula-icon">💀💀</span>
+                    <span class="formula-text">T5 Deaths × 8</span>
+                </div>
+            </div>
+            <p class="formula-note">
+                <strong>Note:</strong> Death scores are only counted for players with verified death data.
+                Players without verified deaths show 0 for death scores.
+            </p>
+        </section>
+
+        <!-- Verification Status -->
+        <section class="verification-status-section">
+            <div id="verification-status" class="verification-status-card">
+                <div class="loading">Loading verification status...</div>
+            </div>
+        </section>
+
+        <!-- Filters and Controls -->
+        <section class="leaderboard-controls">
+            <div class="controls-row">
+                <div class="control-group">
+                    <label for="account-type-filter">Account Type:</label>
+                    <select id="account-type-filter" class="filter-select">
+                        <option value="all">All Accounts</option>
+                        <option value="main">Main Accounts Only</option>
+                        <option value="farm">Farm Accounts Only</option>
+                        <option value="main_with_farms">Main + Their Farms Combined</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="verification-filter">Verification:</label>
+                    <select id="verification-filter" class="filter-select">
+                        <option value="all">All Players</option>
+                        <option value="verified">Verified Only</option>
+                        <option value="unverified">Unverified Only</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <input type="text" id="player-search" placeholder="🔍 Search player..." class="search-input">
+                </div>
+                <div class="control-group">
+                    <button id="refresh-btn" class="refresh-btn">🔄 Refresh</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Leaderboard Stats Summary -->
+        <section class="leaderboard-summary">
+            <div id="leaderboard-stats" class="stats-summary">
+                <div class="loading">Loading statistics...</div>
+            </div>
+        </section>
+
+        <!-- Leaderboard Table -->
+        <section class="leaderboard-section">
+            <div id="leaderboard-container" class="leaderboard-container">
+                <div class="loading">Loading contribution leaderboard...</div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>DKP Contribution Leaderboard • Kingdom 3584 • Real-time Rankings</p>
+        </footer>
+    </div>
+
+    <script src="contribution.js"></script>
+</body>
+</html>

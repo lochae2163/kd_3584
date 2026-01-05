@@ -23,10 +23,50 @@
             </div>
         </section>
 
+        <!-- Final KvK Data Upload -->
+        <section class="admin-section" style="border: 2px solid #7c3aed; border-radius: 12px; padding: 25px;">
+            <h2>🏆 Final KvK Data Upload (End of KvK)</h2>
+            <p class="section-desc" style="color: #c4b5fd;">
+                <strong>Use this at the END of KvK</strong> to upload comprehensive final data in one file:
+                account classification, farm linking, and verified deaths.
+            </p>
+
+            <!-- Upload Form -->
+            <form id="final-kvk-form">
+                <div class="form-group">
+                    <label for="final-kvk-file">Select Final KvK Excel File</label>
+                    <input type="file" id="final-kvk-file" accept=".xlsx,.xls">
+                    <small style="color: #c4b5fd; margin-top: 5px; display: block;">
+                        Required columns: governor_id, account_type, linked_to_main, t4_deaths, t5_deaths, notes
+                    </small>
+                </div>
+                <button type="submit" class="upload-btn final-kvk-btn">
+                    🏆 Upload Final KvK Data
+                </button>
+            </form>
+            <div id="final-kvk-message"></div>
+
+            <!-- Upload Results -->
+            <div id="final-kvk-results" style="display: none; margin-top: 20px;">
+                <h3>Final Upload Results</h3>
+                <div id="final-kvk-results-content"></div>
+            </div>
+
+            <!-- Mark Complete Button -->
+            <div id="mark-complete-section" style="display: none; margin-top: 25px; padding-top: 25px; border-top: 1px solid rgba(124, 58, 237, 0.3);">
+                <h3>Mark Season as Completed</h3>
+                <p class="section-desc">After uploading final data, mark the season as completed to prepare for archiving.</p>
+                <button id="mark-complete-btn" class="upload-btn mark-complete-btn">
+                    ✅ Mark Season as Completed
+                </button>
+                <div id="mark-complete-message"></div>
+            </div>
+        </section>
+
         <!-- Verified Deaths Upload -->
         <section class="admin-section">
             <h2>💀 Upload Verified Deaths (T4/T5 Breakdown)</h2>
-            <p class="section-desc">Upload verified T4 and T5 death data for accurate DKP contribution scoring.</p>
+            <p class="section-desc">Upload verified T4 and T5 death data progressively during KvK.</p>
 
             <!-- Verification Status -->
             <div id="verification-status" class="verification-status">

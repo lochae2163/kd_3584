@@ -1207,6 +1207,214 @@ if (verifiedDeathsForm) {
 }
 
 // ========================================
+// Final KvK Data Upload
+// ========================================
+const finalKvKForm = document.getElementById('final-kvk-form');
+const finalKvKMessage = document.getElementById('final-kvk-message');
+const finalKvKResults = document.getElementById('final-kvk-results');
+const finalKvKResultsContent = document.getElementById('final-kvk-results-content');
+const markCompleteSection = document.getElementById('mark-complete-section');
+const markCompleteBtn = document.getElementById('mark-complete-btn');
+const markCompleteMessage = document.getElementById('mark-complete-message');
+
+if (finalKvKForm) {
+    finalKvKForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!activeSeason) {
+            showMessage(finalKvKMessage, 'error', 'No active season. Please activate a season first.');
+            return;
+        }
+
+        const fileInput = document.getElementById('final-kvk-file');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showMessage(finalKvKMessage, 'error', 'Please select an Excel file');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        showMessage(finalKvKMessage, 'info', '⏳ Uploading final KvK data...');
+        finalKvKResults.style.display = 'none';
+        markCompleteSection.style.display = 'none';
+
+        try {
+            const response = await fetch(`${API_URL}/admin/final-kvk/upload/${activeSeason.season_id}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const stats = result.results;
+                const finalStats = result.final_stats;
+
+                showMessage(finalKvKMessage, 'success',
+                    `✅ ${result.message}`
+                );
+
+                // Display detailed results
+                finalKvKResults.style.display = 'block';
+                finalKvKResultsContent.innerHTML = `
+                    <div class="upload-summary">
+                        <h4>🏆 Final KvK Data Upload Complete</h4>
+                        <div class="summary-stats">
+                            <div class="summary-stat success">
+                                <span class="stat-icon">👥</span>
+                                <span class="stat-number">${stats.players_processed}</span>
+                                <span class="stat-label">Players Processed</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-icon">⚙️</span>
+                                <span class="stat-number">${stats.classifications_updated}</span>
+                                <span class="stat-label">Classified</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-icon">🔗</span>
+                                <span class="stat-number">${stats.farms_linked}</span>
+                                <span class="stat-label">Farms Linked</span>
+                            </div>
+                            <div class="summary-stat">
+                                <span class="stat-icon">💀</span>
+                                <span class="stat-number">${stats.deaths_verified}</span>
+                                <span class="stat-label">Deaths Verified</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="final-stats-summary">
+                        <h4>📊 Final Statistics</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Players:</span>
+                                <span class="stat-value">${finalStats.total_players}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Main Accounts:</span>
+                                <span class="stat-value main">${finalStats.main_accounts}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Farm Accounts:</span>
+                                <span class="stat-value farm">${finalStats.farm_accounts}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Vacation:</span>
+                                <span class="stat-value vacation">${finalStats.vacation_accounts}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Farms Linked:</span>
+                                <span class="stat-value">${finalStats.farms_linked}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Deaths Verified:</span>
+                                <span class="stat-value">${finalStats.deaths_verified}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${stats.warnings.length > 0 ? `
+                        <div class="upload-warnings">
+                            <h4>⚠️ Warnings (${stats.warnings.length})</h4>
+                            <div class="warnings-list">
+                                ${stats.warnings.map(w => `
+                                    <div class="warning-item">
+                                        <span class="warning-row">Row ${w.row}</span>
+                                        <span class="warning-governor">${w.governor_id || ''}</span>
+                                        <span class="warning-message">${w.warning}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${stats.errors.length > 0 ? `
+                        <div class="upload-errors">
+                            <h4>❌ Errors (${stats.errors.length})</h4>
+                            <div class="errors-list">
+                                ${stats.errors.map(e => `
+                                    <div class="error-item">
+                                        <span class="error-row">Row ${e.row || 'N/A'}</span>
+                                        <span class="error-governor">${e.governor_id || ''}</span>
+                                        <span class="error-message">${e.error}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+
+                // Show mark complete section
+                markCompleteSection.style.display = 'block';
+
+                // Reload relevant sections
+                await loadPlayerClassification();
+                await loadVerificationStatus();
+
+                // Clear file input
+                fileInput.value = '';
+            } else {
+                showMessage(finalKvKMessage, 'error', `❌ ${result.error || result.detail || 'Upload failed'}`);
+            }
+        } catch (error) {
+            console.error('Final KvK upload error:', error);
+            showMessage(finalKvKMessage, 'error', `❌ Upload failed: ${error.message}`);
+        }
+    });
+}
+
+if (markCompleteBtn) {
+    markCompleteBtn.addEventListener('click', async () => {
+        if (!activeSeason) {
+            showMessage(markCompleteMessage, 'error', 'No active season');
+            return;
+        }
+
+        const confirmed = confirm(
+            `Mark ${activeSeason.season_name} as completed?\n\n` +
+            `This indicates that:\n` +
+            `• All final data has been uploaded\n` +
+            `• Season is ready to be archived\n` +
+            `• No more regular uploads should occur\n\n` +
+            `Continue?`
+        );
+
+        if (!confirmed) return;
+
+        showMessage(markCompleteMessage, 'info', '⏳ Marking season as completed...');
+
+        try {
+            const response = await fetch(`${API_URL}/admin/final-kvk/mark-complete/${activeSeason.season_id}`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage(markCompleteMessage, 'success',
+                    `✅ ${result.message}<br>` +
+                    `Season is now ready for archiving.`
+                );
+
+                // Reload seasons to reflect new status
+                await loadSeasons();
+
+                // Hide mark complete section after successful marking
+                markCompleteSection.style.display = 'none';
+            } else {
+                showMessage(markCompleteMessage, 'error', `❌ ${result.error || result.detail || 'Failed to mark complete'}`);
+            }
+        } catch (error) {
+            console.error('Mark complete error:', error);
+            showMessage(markCompleteMessage, 'error', `❌ Failed: ${error.message}`);
+        }
+    });
+}
+
+// ========================================
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', async () => {

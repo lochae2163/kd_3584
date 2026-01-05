@@ -516,9 +516,234 @@ async function deleteHistoryFile(historyId, fileName) {
 }
 
 // ========================================
+// Season Management
+// ========================================
+let activeSeason = null;
+
+async function loadSeasons() {
+    const seasonManagement = document.getElementById('season-management');
+
+    try {
+        const [allResponse, activeResponse] = await Promise.all([
+            fetch(`${API_URL}/admin/seasons/all`),
+            fetch(`${API_URL}/admin/seasons/active`)
+        ]);
+
+        const allData = await allResponse.json();
+        const activeData = await activeResponse.json();
+
+        activeSeason = activeData.season;
+        const seasons = allData.seasons;
+
+        // Auto-populate season fields
+        if (activeSeason) {
+            document.getElementById('baseline-season').value = activeSeason.season_id;
+            document.getElementById('current-season').value = activeSeason.season_id;
+        }
+
+        let html = `
+            <div class="season-header">
+                <div class="active-season-banner">
+                    <h3>🎯 Active Season: ${activeSeason ? activeSeason.season_name : 'None'}</h3>
+                    <p>All uploads will go to: <strong>${activeSeason ? activeSeason.season_id : 'N/A'}</strong></p>
+                </div>
+                <button class="create-season-btn" onclick="showCreateSeasonModal()">➕ Create New Season</button>
+            </div>
+
+            <div class="seasons-grid">
+        `;
+
+        seasons.forEach(season => {
+            const isActive = season.is_active;
+            const isArchived = season.is_archived;
+            const statusClass = isArchived ? 'archived' : isActive ? 'active' : season.status;
+            const statusEmoji = isArchived ? '🔒' : isActive ? '✅' : season.status === 'preparing' ? '⏳' : '✓';
+
+            html += `
+                <div class="season-card ${statusClass}">
+                    <div class="season-header-card">
+                        <h4>${season.season_name}</h4>
+                        <span class="season-badge ${statusClass}">${statusEmoji} ${isArchived ? 'Archived' : isActive ? 'Active' : season.status}</span>
+                    </div>
+                    <div class="season-stats">
+                        <p><strong>Season ID:</strong> ${season.season_id}</p>
+                        <p><strong>Players:</strong> ${formatNumber(season.player_count)}</p>
+                        <p><strong>Uploads:</strong> ${season.total_uploads}</p>
+                        <p><strong>Baseline:</strong> ${season.has_baseline ? '✅' : '❌'}</p>
+                        <p><strong>Current Data:</strong> ${season.has_current_data ? '✅' : '❌'}</p>
+                        ${season.start_date ? `<p><strong>Started:</strong> ${new Date(season.start_date).toLocaleDateString()}</p>` : ''}
+                    </div>
+                    <div class="season-actions">
+                        ${!isActive && !isArchived ? `
+                            <button class="activate-btn" onclick="activateSeason('${season.season_id}')">
+                                🎯 Activate
+                            </button>
+                        ` : ''}
+                        ${isActive && !season.final_data_uploaded ? `
+                            <button class="mark-final-btn" onclick="markFinalDataUploaded('${season.season_id}')">
+                                ✓ Mark Final Data
+                            </button>
+                        ` : ''}
+                        ${!isArchived && season.status === 'completed' ? `
+                            <button class="archive-btn" onclick="archiveSeason('${season.season_id}')">
+                                🔒 Archive
+                            </button>
+                        ` : ''}
+                        <button class="view-stats-btn" onclick="viewSeasonStats('${season.season_id}')">
+                            📊 View Stats
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        seasonManagement.innerHTML = html;
+
+    } catch (error) {
+        seasonManagement.innerHTML = `<div class="message error">Failed to load seasons: ${error.message}</div>`;
+    }
+}
+
+async function activateSeason(seasonId) {
+    if (!confirm(`Activate ${seasonId}? This will deactivate all other seasons.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/admin/seasons/activate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ season_id: seasonId })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`✅ ${seasonId} is now active!`);
+            await loadSeasons();
+            await loadDataStatus();
+        } else {
+            throw new Error(result.error || 'Activation failed');
+        }
+    } catch (error) {
+        alert(`❌ Activation failed: ${error.message}`);
+    }
+}
+
+async function archiveSeason(seasonId) {
+    if (!confirm(`⚠️ Archive ${seasonId}? This will make the season READ-ONLY. You cannot upload new data after archiving. Continue?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/admin/seasons/archive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ season_id: seasonId, confirm: true })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`✅ ${seasonId} has been archived!`);
+            await loadSeasons();
+        } else {
+            throw new Error(result.error || 'Archive failed');
+        }
+    } catch (error) {
+        alert(`❌ Archive failed: ${error.message}`);
+    }
+}
+
+async function markFinalDataUploaded(seasonId) {
+    if (!confirm(`Mark final data as uploaded for ${seasonId}? This indicates KvK is complete.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/admin/seasons/${seasonId}/mark-final-uploaded`, {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`✅ Final data marked for ${seasonId}!`);
+            await loadSeasons();
+        } else {
+            throw new Error(result.error || 'Mark failed');
+        }
+    } catch (error) {
+        alert(`❌ Mark failed: ${error.message}`);
+    }
+}
+
+async function viewSeasonStats(seasonId) {
+    try {
+        const response = await fetch(`${API_URL}/admin/seasons/${seasonId}/stats`);
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            const stats = result.stats;
+            alert(`📊 ${seasonId} Stats:\n\n` +
+                `Players: ${stats.player_count}\n` +
+                `Uploads: ${stats.total_uploads}\n` +
+                `Has Baseline: ${stats.has_baseline ? 'Yes' : 'No'}\n` +
+                `Has Current Data: ${stats.has_current_data ? 'Yes' : 'No'}\n` +
+                `Final Data: ${stats.final_data_uploaded ? 'Yes' : 'No'}\n` +
+                `Status: ${stats.status}\n` +
+                `Active: ${stats.is_active ? 'Yes' : 'No'}\n` +
+                `Archived: ${stats.is_archived ? 'Yes' : 'No'}`
+            );
+        } else {
+            throw new Error(result.error || 'Failed to get stats');
+        }
+    } catch (error) {
+        alert(`❌ Failed to load stats: ${error.message}`);
+    }
+}
+
+function showCreateSeasonModal() {
+    const seasonName = prompt('Enter season name (e.g., "KvK 7 - Kingdom 3584"):');
+    if (!seasonName) return;
+
+    const description = prompt('Enter description (optional):') || '';
+
+    createSeason(seasonName, description);
+}
+
+async function createSeason(seasonName, description) {
+    try {
+        const response = await fetch(`${API_URL}/admin/seasons/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                season_name: seasonName,
+                description: description,
+                kingdom_id: '3584'
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`✅ Created ${result.season.season_id}: ${seasonName}`);
+            await loadSeasons();
+        } else {
+            throw new Error(result.error || 'Creation failed');
+        }
+    } catch (error) {
+        alert(`❌ Creation failed: ${error.message}`);
+    }
+}
+
+// ========================================
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
+    loadSeasons();
     loadDataStatus();
     loadHistory();
     loadFileManagement();

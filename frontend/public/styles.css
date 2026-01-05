@@ -1662,3 +1662,231 @@ tbody tr:hover {
         padding: 15px;
     }
 }
+
+/* ========================================
+   Season Management
+======================================== */
+.season-management {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 25px;
+}
+
+.season-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.active-season-banner {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    padding: 15px 25px;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 300px;
+}
+
+.active-season-banner h3 {
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+    color: #ffffff;
+}
+
+.active-season-banner p {
+    font-size: 0.95rem;
+    color: #d1fae5;
+    margin: 0;
+}
+
+.create-season-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.create-season-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+}
+
+.seasons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.season-card {
+    background-color: #0f172a;
+    border: 2px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s;
+}
+
+.season-card:hover {
+    border-color: #475569;
+    transform: translateY(-2px);
+}
+
+.season-card.active {
+    border-color: #10b981;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
+}
+
+.season-card.archived {
+    border-color: #6b7280;
+    opacity: 0.8;
+}
+
+.season-card.preparing {
+    border-color: #f59e0b;
+}
+
+.season-card.completed {
+    border-color: #3b82f6;
+}
+
+.season-header-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 15px;
+    gap: 10px;
+}
+
+.season-header-card h4 {
+    font-size: 1.1rem;
+    color: #ffffff;
+    margin: 0;
+    flex: 1;
+}
+
+.season-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.season-badge.active {
+    background-color: #10b981;
+    color: #ffffff;
+}
+
+.season-badge.archived {
+    background-color: #6b7280;
+    color: #ffffff;
+}
+
+.season-badge.preparing {
+    background-color: #f59e0b;
+    color: #ffffff;
+}
+
+.season-badge.completed {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+.season-stats {
+    margin-bottom: 15px;
+}
+
+.season-stats p {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin: 5px 0;
+}
+
+.season-stats strong {
+    color: #e2e8f0;
+}
+
+.season-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.season-actions button {
+    flex: 1;
+    min-width: 120px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.activate-btn {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.activate-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.mark-final-btn {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.mark-final-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.archive-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.archive-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.view-stats-btn {
+    background-color: #334155;
+    color: #e2e8f0;
+}
+
+.view-stats-btn:hover {
+    background-color: #475569;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .season-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .active-season-banner {
+        min-width: auto;
+    }
+
+    .seasons-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .season-actions button {
+        min-width: auto;
+    }
+}

@@ -814,10 +814,6 @@ async function loadPlayerClassification() {
                             <span class="stat-value vacation">${summary.vacation_accounts || 0}</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-label">Dead Weight:</span>
-                            <span class="stat-value dead">${summary.dead_weight || 0}</span>
-                        </div>
-                        <div class="stat-item">
                             <span class="stat-label">Farm Links:</span>
                             <span class="stat-value">${summary.total_farm_links || 0}</span>
                         </div>
@@ -831,9 +827,6 @@ async function loadPlayerClassification() {
                         <option value="farm">Farm Accounts</option>
                         <option value="vacation">Vacation</option>
                     </select>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="show-dead-weight"> Show Dead Weight Only
-                    </label>
                 </div>
             </div>
 
@@ -863,7 +856,6 @@ async function loadPlayerClassification() {
         // Add event listeners
         document.getElementById('player-search').addEventListener('input', filterPlayers);
         document.getElementById('type-filter').addEventListener('change', filterPlayers);
-        document.getElementById('show-dead-weight').addEventListener('change', filterPlayers);
 
     } catch (error) {
         playerClassification.innerHTML = `<div class="message error">Failed to load players: ${error.message}</div>`;
@@ -892,15 +884,12 @@ function renderPlayerRows(players) {
             `<span class="farm-count-badge">${farmCount} ${farmCount === 1 ? 'farm' : 'farms'}</span>` :
             '<span class="no-farms">No farms</span>';
 
-        const deadWeightClass = player.is_dead_weight ? ' dead-weight' : '';
-
         return `
-            <tr class="player-row ${typeClass}${deadWeightClass}" data-governor-id="${player.governor_id}">
+            <tr class="player-row ${typeClass}" data-governor-id="${player.governor_id}">
                 <td>${player.rank || '-'}</td>
                 <td>
                     <div class="player-name">${player.governor_name}</div>
                     ${linkedInfo}
-                    ${player.is_dead_weight ? '<span class="dead-badge">💀 Dead Weight</span>' : ''}
                 </td>
                 <td><code>${player.governor_id}</code></td>
                 <td><span class="type-badge ${typeClass}">${typeBadge}</span></td>
@@ -925,7 +914,6 @@ function renderPlayerRows(players) {
 function filterPlayers() {
     const searchTerm = document.getElementById('player-search').value.toLowerCase();
     const typeFilter = document.getElementById('type-filter').value;
-    const showDeadWeight = document.getElementById('show-dead-weight').checked;
 
     const rows = document.querySelectorAll('.player-row');
 
@@ -934,13 +922,11 @@ function filterPlayers() {
         const id = row.querySelector('code').textContent;
         const type = row.classList.contains('farm') ? 'farm' :
                      row.classList.contains('vacation') ? 'vacation' : 'main';
-        const isDeadWeight = row.classList.contains('dead-weight');
 
         const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm);
         const matchesType = typeFilter === 'all' || type === typeFilter;
-        const matchesDeadWeight = !showDeadWeight || isDeadWeight;
 
-        if (matchesSearch && matchesType && matchesDeadWeight) {
+        if (matchesSearch && matchesType) {
             row.style.display = '';
         } else {
             row.style.display = 'none';
@@ -949,7 +935,6 @@ function filterPlayers() {
 }
 
 function openClassifyModal(governorId, governorName) {
-    // Step 1: Account Type
     const accountType = prompt(
         `Classify ${governorName} (${governorId})\n\n` +
         `Enter account type:\n` +
@@ -974,28 +959,7 @@ function openClassifyModal(governorId, governorName) {
         return;
     }
 
-    // Step 2: Dead Weight (optional - use prompt instead of confirm)
-    const deadWeightAnswer = prompt(
-        `Mark as Dead Weight?\n\n` +
-        `Enter:\n` +
-        `y or yes = Mark as dead weight (inactive)\n` +
-        `n or no = Active player\n` +
-        `(or click Cancel to abort)`
-    );
-
-    // User clicked Cancel
-    if (deadWeightAnswer === null) return;
-
-    const isDeadWeight = deadWeightAnswer.trim().toLowerCase() === 'y' ||
-                         deadWeightAnswer.trim().toLowerCase() === 'yes';
-
-    // Step 3: Notes (optional)
-    const notes = prompt('Add classification notes (optional):');
-
-    // User clicked Cancel
-    if (notes === null) return;
-
-    classifyPlayer(governorId, type, isDeadWeight, notes);
+    classifyPlayer(governorId, type, false, '');
 }
 
 async function classifyPlayer(governorId, accountType, isDeadWeight, notes) {

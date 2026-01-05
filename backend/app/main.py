@@ -11,6 +11,7 @@ from app.services.data_processor import DataProcessor
 from app.routes.auth import router as auth_router
 from app.routes.upload import router as upload_router
 from app.routes.players import router as players_router
+from app.routes.seasons import router as seasons_router
 
 
 logging.basicConfig(level=logging.INFO)
@@ -53,6 +54,8 @@ app.include_router(auth_router)
 app.include_router(upload_router)
 
 app.include_router(players_router)
+
+app.include_router(seasons_router)
 
 @app.get("/")
 async def root():

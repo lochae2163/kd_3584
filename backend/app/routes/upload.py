@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from typing import Optional
 from bson import ObjectId
 from app.services.ml_service import ml_service
+from app.services.season_service import season_service
 from app.database import Database
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -23,6 +24,14 @@ async def upload_baseline(
     - CSV files (.csv)
     - Excel files (.xlsx, .xls) - Auto-detects correct sheet
     """
+    # Check if season is archived (read-only protection)
+    is_archived = await season_service.is_season_archived(kvk_season_id)
+    if is_archived:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Season {kvk_season_id} is archived and cannot be modified"
+        )
+
     # Check file extension
     is_csv = file.filename.endswith('.csv')
     is_excel = file.filename.endswith(('.xlsx', '.xls'))
@@ -55,6 +64,9 @@ async def upload_baseline(
         if not result.get('success'):
             raise HTTPException(status_code=400, detail=result.get('error'))
 
+        # Update season stats after baseline upload
+        await season_service.update_season_stats(kvk_season_id)
+
         return result
 
     except Exception as e:
@@ -78,6 +90,14 @@ async def upload_current(
     - CSV files (.csv)
     - Excel files (.xlsx, .xls) - Auto-detects correct sheet
     """
+    # Check if season is archived (read-only protection)
+    is_archived = await season_service.is_season_archived(kvk_season_id)
+    if is_archived:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Season {kvk_season_id} is archived and cannot be modified"
+        )
+
     # Check file extension
     is_csv = file.filename.endswith('.csv')
     is_excel = file.filename.endswith(('.xlsx', '.xls'))
@@ -111,6 +131,9 @@ async def upload_current(
 
         if not result.get('success'):
             raise HTTPException(status_code=400, detail=result.get('error'))
+
+        # Update season stats after current data upload
+        await season_service.update_season_stats(kvk_season_id)
 
         return result
 

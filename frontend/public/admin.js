@@ -47,7 +47,12 @@ function formatNumber(num) {
 // Load Data Status
 // ========================================
 async function loadDataStatus() {
-    const seasonId = document.getElementById('baseline-season').value || 'season_1';
+    if (!activeSeason) {
+        dataStatus.innerHTML = '<div class="loading">Loading...</div>';
+        return;
+    }
+
+    const seasonId = activeSeason.season_id;
 
     try {
         const response = await fetch(`${API_URL}/admin/data-status/${seasonId}`);
@@ -99,8 +104,13 @@ async function loadDataStatus() {
 // Load Upload History
 // ========================================
 async function loadHistory() {
-    const seasonId = document.getElementById('baseline-season').value || 'season_1';
-    
+    if (!activeSeason) {
+        historyList.innerHTML = '<div class="loading">Loading...</div>';
+        return;
+    }
+
+    const seasonId = activeSeason.season_id;
+
     try {
         const response = await fetch(`${API_URL}/admin/history/${seasonId}`);
         const data = await response.json();
@@ -399,8 +409,13 @@ async function loadFileManagement() {
 async function loadBaselineFiles() {
     const container = document.getElementById('baseline-files-table');
 
+    if (!activeSeason) {
+        container.innerHTML = '<div class="loading">No active season</div>';
+        return;
+    }
+
     try {
-        const response = await fetch(`${API_URL}/admin/data-status/season_1`);
+        const response = await fetch(`${API_URL}/admin/data-status/${activeSeason.season_id}`);
         const data = await response.json();
 
         if (data.baseline_info) {
@@ -443,8 +458,13 @@ async function loadBaselineFiles() {
 async function loadHistoryFiles() {
     const container = document.getElementById('history-files-table');
 
+    if (!activeSeason) {
+        container.innerHTML = '<div class="loading">No active season</div>';
+        return;
+    }
+
     try {
-        const response = await fetch(`${API_URL}/admin/history/season_1`);
+        const response = await fetch(`${API_URL}/admin/history/${activeSeason.season_id}`);
         const data = await response.json();
 
         if (data.history && data.history.length > 0) {
@@ -600,6 +620,9 @@ async function loadSeasons() {
         html += `</div>`;
 
         seasonManagement.innerHTML = html;
+
+        // Load player classification after activeSeason is set
+        await loadPlayerClassification();
 
     } catch (error) {
         seasonManagement.innerHTML = `<div class="message error">Failed to load seasons: ${error.message}</div>`;
@@ -1014,14 +1037,12 @@ async function linkFarmAccount(farmGovernorId, mainGovernorId) {
 // ========================================
 // Initialize
 // ========================================
-document.addEventListener('DOMContentLoaded', () => {
-    loadSeasons();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Load seasons first (this will also load player classification)
+    await loadSeasons();
+
+    // Load other sections
     loadDataStatus();
     loadHistory();
     loadFileManagement();
-
-    // Load player classification after a short delay to ensure activeSeason is set
-    setTimeout(() => {
-        loadPlayerClassification();
-    }, 500);
 });

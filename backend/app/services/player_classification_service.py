@@ -65,14 +65,17 @@ class PlayerClassificationService:
                 }
 
             # Update player classification in current_data
+            # Handle both AccountType enum and string values
+            account_type_str = account_type.value if hasattr(account_type, 'value') else account_type
+
             classification = {
-                "account_type": account_type.value,
+                "account_type": account_type_str,
                 "is_dead_weight": is_dead_weight,
                 "classification_notes": classification_notes
             }
 
             # If changing to farm and previously had farm_accounts, clear them
-            if account_type == AccountType.FARM:
+            if account_type_str == "farm":
                 classification["farm_accounts"] = []
                 classification["linked_to_main"] = None  # Will be set when linking
 

@@ -949,6 +949,7 @@ function filterPlayers() {
 }
 
 function openClassifyModal(governorId, governorName) {
+    // Step 1: Account Type
     const accountType = prompt(
         `Classify ${governorName} (${governorId})\n\n` +
         `Enter account type:\n` +
@@ -958,7 +959,7 @@ function openClassifyModal(governorId, governorName) {
         `Enter number (1-3):`
     );
 
-    // User clicked Cancel on first prompt
+    // User clicked Cancel
     if (accountType === null) return;
 
     const typeMap = {
@@ -973,13 +974,25 @@ function openClassifyModal(governorId, governorName) {
         return;
     }
 
-    // Ask about dead weight status
-    const isDeadWeight = confirm('Mark as Dead Weight (inactive player)?');
+    // Step 2: Dead Weight (optional - use prompt instead of confirm)
+    const deadWeightAnswer = prompt(
+        `Mark as Dead Weight?\n\n` +
+        `Enter:\n` +
+        `y or yes = Mark as dead weight (inactive)\n` +
+        `n or no = Active player\n` +
+        `(or click Cancel to abort)`
+    );
 
-    // Ask for notes (can be empty string)
+    // User clicked Cancel
+    if (deadWeightAnswer === null) return;
+
+    const isDeadWeight = deadWeightAnswer.trim().toLowerCase() === 'y' ||
+                         deadWeightAnswer.trim().toLowerCase() === 'yes';
+
+    // Step 3: Notes (optional)
     const notes = prompt('Add classification notes (optional):');
 
-    // User clicked Cancel on notes prompt
+    // User clicked Cancel
     if (notes === null) return;
 
     classifyPlayer(governorId, type, isDeadWeight, notes);

@@ -472,37 +472,44 @@ class KvKDataModel:
             has_any_stats = any(current_stats.get(field, 0) > 0 for field in kvk_stats_fields)
 
             # Check if player exists in baseline
-            if gov_id in baseline_lookup and has_any_stats:
-                # Existing player with stats - calculate delta normally
+            if gov_id in baseline_lookup:
                 baseline_stats = baseline_lookup[gov_id]
-                delta = self.calculate_player_delta(baseline_stats, current_stats)
-                in_baseline = True
-                newly_added = False
+
+                if has_any_stats:
+                    # Existing player with stats - calculate delta normally
+                    delta = self.calculate_player_delta(baseline_stats, current_stats)
+                    stats_to_show = current_stats
+                    in_baseline = True
+                    newly_added = False
+                else:
+                    # Player was in baseline but now has 0 KvK stats (migrated out)
+                    # Keep showing their baseline stats, but with 0 delta
+                    delta = {field: 0 for field in self.NUMERIC_COLUMNS}
+                    stats_to_show = baseline_stats  # Show baseline stats, not current zeros
+                    in_baseline = True
+                    newly_added = False
+                    logger.info(f"Player migrated out: {player.get('governor_name')} (ID: {gov_id}) - Showing baseline stats with 0 delta")
             else:
-                # New player OR migrated out player - use current stats as new baseline
-                # Set delta to zero for all stats
+                # New player - use current stats as new baseline
                 baseline_stats = current_stats
                 delta = {field: 0 for field in self.NUMERIC_COLUMNS}
-                in_baseline = gov_id in baseline_lookup  # True if was in baseline
+                stats_to_show = current_stats
+                in_baseline = False
                 newly_added = True
 
-                # Track new/returning player to add to baseline
+                # Track new player to add to baseline
                 new_players_added.append({
                     "governor_id": gov_id,
                     "governor_name": player.get('governor_name'),
                     "stats": current_stats
                 })
-
-                if gov_id not in baseline_lookup:
-                    logger.info(f"New player detected: {player.get('governor_name')} (ID: {gov_id}) - Setting as new baseline")
-                else:
-                    logger.info(f"Player returned or reset: {player.get('governor_name')} (ID: {gov_id}) - Resetting baseline to current stats")
+                logger.info(f"New player detected: {player.get('governor_name')} (ID: {gov_id}) - Setting as new baseline")
 
             # Add to results
             results.append({
                 "governor_id": gov_id,
                 "governor_name": player.get('governor_name'),
-                "stats": current_stats,
+                "stats": stats_to_show,
                 "delta": delta,
                 "in_baseline": in_baseline,
                 "newly_added_to_baseline": newly_added

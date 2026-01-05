@@ -80,7 +80,7 @@ class PlayerClassificationService:
                 classification["linked_to_main"] = None  # Will be set when linking
 
             # If changing from farm to main/vacation, unlink from any main account
-            if account_type != AccountType.FARM and player.get("linked_to_main"):
+            if account_type_str != "farm" and player.get("linked_to_main"):
                 # Find and update the main account
                 main_gov_id = player["linked_to_main"]
                 await self._remove_farm_from_main(main_gov_id, governor_id, kvk_season_id)
@@ -104,13 +104,13 @@ class PlayerClassificationService:
                 array_filters=[{"player.governor_id": governor_id}]
             )
 
-            logger.info(f"Classified player {governor_id} as {account_type.value} in {kvk_season_id}")
+            logger.info(f"Classified player {governor_id} as {account_type_str} in {kvk_season_id}")
 
             return {
                 "success": True,
-                "message": f"Player {governor_id} classified as {account_type.value}",
+                "message": f"Player {governor_id} classified as {account_type_str}",
                 "governor_id": governor_id,
-                "account_type": account_type.value,
+                "account_type": account_type_str,
                 "is_dead_weight": is_dead_weight
             }
 

@@ -340,15 +340,22 @@ function renderLeaderboard(players) {
 
         // Build dynamic columns
         const columnCells = orderedColumns.map(colKey => {
-            return `<td class="text-right">${renderCellValue(colKey, player)}</td>`;
+            const cellValue = renderCellValue(colKey, player);
+            return `<td class="stat-col text-right"><div class="stat-value">${cellValue}</div></td>`;
         }).join('');
 
         return `
-            <tr class="${rowClass}" onclick="window.location.href='player.html?id=${player.governor_id}'">
-                <td>${rankDisplay}</td>
-                <td>
-                    <div class="player-name">${player.governor_name}</div>
-                    <div class="player-id">ID: ${player.governor_id}</div>
+            <tr class="player-row ${rowClass}" onclick="window.location.href='player.html?id=${player.governor_id}'">
+                <td class="rank-col">
+                    <div class="rank-display ${rowClass}">
+                        ${rankDisplay}
+                    </div>
+                </td>
+                <td class="player-col">
+                    <div class="player-info">
+                        <div class="player-name">${player.governor_name}</div>
+                        <div class="player-id">ID: ${player.governor_id}</div>
+                    </div>
                 </td>
                 ${columnCells}
             </tr>

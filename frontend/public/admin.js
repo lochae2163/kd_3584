@@ -779,8 +779,15 @@ async function loadPlayerClassification() {
             fetch(`${API_URL}/admin/players/stats/classification-summary/${activeSeason.season_id}`)
         ]);
 
+        if (!playersResponse.ok || !summaryResponse.ok) {
+            throw new Error(`API error: ${playersResponse.status} / ${summaryResponse.status}`);
+        }
+
         const playersData = await playersResponse.json();
         const summaryData = await summaryResponse.json();
+
+        console.log('Players data:', playersData);
+        console.log('Summary data:', summaryData);
 
         const players = playersData.players || [];
         const summary = summaryData.summary || {};

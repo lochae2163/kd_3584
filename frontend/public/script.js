@@ -5,7 +5,7 @@
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:8000'
     : 'https://kd3584-production.up.railway.app';
-const KVK_SEASON_ID = 'season_1';
+let KVK_SEASON_ID = null; // Will be fetched from active season
 const PLAYERS_PER_PAGE = 50;
 
 // ========================================
@@ -429,6 +429,30 @@ function checkTableScroll() {
     }
 }
 
+// Fetch active season and initialize
+async function initializeApp() {
+    try {
+        // Fetch active season
+        const response = await fetch(`${API_URL}/admin/seasons/active`);
+        const data = await response.json();
+
+        if (data.success && data.season) {
+            KVK_SEASON_ID = data.season.season_id;
+            console.log('Active season:', KVK_SEASON_ID);
+
+            // Load data
+            await loadStats();
+            await loadLeaderboard();
+        } else {
+            console.error('No active season found');
+            statsGrid.innerHTML = '<div class="loading">⚠️ No active season configured</div>';
+        }
+    } catch (error) {
+        console.error('Failed to fetch active season:', error);
+        statsGrid.innerHTML = '<div class="loading">⚠️ Failed to load season information</div>';
+    }
+}
+
 // Pagination button listeners
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('first-page').addEventListener('click', () => goToPage(1));
@@ -439,8 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
         goToPage(totalPages);
     });
 
-    loadStats();
-    loadLeaderboard();
+    initializeApp();
 
     // Check table scroll on resize
     window.addEventListener('resize', checkTableScroll);

@@ -336,6 +336,60 @@ async def delete_history_entry(history_id: str):
     }
 
 
+@router.get("/find-player-history/{kvk_season_id}/{governor_id}")
+async def find_player_history(kvk_season_id: str, governor_id: str):
+    """
+    Search upload history to find when a player first appeared with stats.
+
+    Returns all uploads where the player appears, showing their stats progression.
+    """
+    try:
+        history_col = Database.get_collection("upload_history")
+        uploads = await history_col.find(
+            {"kvk_season_id": kvk_season_id}
+        ).sort("timestamp", 1).to_list(length=100)
+
+        player_appearances = []
+        first_with_stats = None
+
+        for idx, upload in enumerate(uploads, 1):
+            players = upload.get('players', [])
+            player = next((p for p in players if p['governor_id'] == governor_id), None)
+
+            if player:
+                stats = player.get('stats', {})
+                has_kvk_stats = any(stats.get(field, 0) > 0 for field in ['kill_points', 'deads', 't4_kills', 't5_kills'])
+
+                appearance = {
+                    "upload_index": idx,
+                    "upload_id": str(upload['_id']),
+                    "timestamp": upload.get('timestamp'),
+                    "description": upload.get('description'),
+                    "stats": stats,
+                    "has_kvk_stats": has_kvk_stats
+                }
+
+                player_appearances.append(appearance)
+
+                if has_kvk_stats and not first_with_stats:
+                    first_with_stats = appearance
+
+        return {
+            "success": True,
+            "governor_id": governor_id,
+            "kvk_season_id": kvk_season_id,
+            "total_appearances": len(player_appearances),
+            "first_appearance_with_stats": first_with_stats,
+            "all_appearances": player_appearances
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to search history: {str(e)}"
+        )
+
+
 @router.post("/reprocess-deltas/{kvk_season_id}")
 async def reprocess_deltas(kvk_season_id: str):
     """

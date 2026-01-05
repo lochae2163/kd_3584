@@ -52,10 +52,9 @@ class ContributionService:
         t5_kill_score = t5_kills * self.T5_KILL_WEIGHT
         total_kill_score = t4_kill_score + t5_kill_score
 
-        # Death scores (verified or estimated)
+        # Death scores (only from verified data)
         verified_deaths = player.get('verified_deaths')
         has_verified = False
-        using_estimated = False
         t4_death_score = 0
         t5_death_score = 0
 
@@ -68,14 +67,10 @@ class ContributionService:
             t5_death_score = t5_deaths * self.T5_DEATH_WEIGHT
             has_verified = True
         else:
-            # Fallback: Use total deaths with average weight
-            total_deaths = stats.get('deads', 0)
-            estimated_score = total_deaths * self.ESTIMATED_DEATH_WEIGHT
-
-            # Split evenly between T4 and T5 for display
-            t4_death_score = estimated_score // 2
-            t5_death_score = estimated_score - t4_death_score
-            using_estimated = True
+            # No verified data - death scores remain 0
+            # Contribution score will only include kills until deaths are verified
+            t4_death_score = 0
+            t5_death_score = 0
 
         total_death_score = t4_death_score + t5_death_score
         total_contribution = total_kill_score + total_death_score
@@ -91,7 +86,7 @@ class ContributionService:
             total_death_score=total_death_score,
             total_contribution_score=total_contribution,
             has_verified_deaths=has_verified,
-            using_estimated_deaths=using_estimated
+            using_estimated_deaths=False  # No longer using estimates
         )
 
     async def calculate_all_contributions(

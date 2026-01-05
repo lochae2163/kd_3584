@@ -196,9 +196,11 @@ async def get_contribution_scores(
     DKP Formula:
     - T4 kills × 1
     - T5 kills × 2
-    - T4 deaths × 4 (verified data)
-    - T5 deaths × 8 (verified data)
-    - OR Total deaths × 5 (fallback when no verified data)
+    - T4 deaths × 4 (only when verified data exists)
+    - T5 deaths × 8 (only when verified data exists)
+
+    Note: Death scores are 0 for unverified players.
+    Upload verified deaths to get complete contribution scores.
 
     Args:
         use_verified_deaths: Use verified death data if available

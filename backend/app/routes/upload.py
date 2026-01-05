@@ -390,6 +390,113 @@ async def find_player_history(kvk_season_id: str, governor_id: str):
         )
 
 
+@router.post("/rebuild-baseline-from-history/{kvk_season_id}")
+async def rebuild_baseline_from_history(kvk_season_id: str):
+    """
+    Rebuild baseline using first appearance of each player from upload history.
+
+    This endpoint:
+    - Searches through ALL upload history
+    - Finds each player's first appearance with KvK stats
+    - Creates a new baseline using those stats
+    - Re-calculates all deltas based on the new baseline
+
+    Use this to fix baseline issues for players who joined mid-KvK.
+    """
+    try:
+        from datetime import datetime
+
+        # Get all upload history (sorted by timestamp ascending)
+        history_col = Database.get_collection("upload_history")
+        uploads = await history_col.find(
+            {"kvk_season_id": kvk_season_id}
+        ).sort("timestamp", 1).to_list(length=100)
+
+        if not uploads:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No upload history found for season {kvk_season_id}"
+            )
+
+        # Track each player's first appearance
+        player_first_appearance = {}
+
+        for upload in uploads:
+            players = upload.get('players', [])
+
+            for player in players:
+                gov_id = player.get('governor_id')
+                stats = player.get('stats', {})
+
+                # Check if player has KvK stats
+                has_kvk_stats = any(stats.get(field, 0) > 0 for field in ['kill_points', 'deads', 't4_kills', 't5_kills'])
+
+                # If this is first time we see this player with stats, record it
+                if has_kvk_stats and gov_id not in player_first_appearance:
+                    player_first_appearance[gov_id] = {
+                        "governor_id": gov_id,
+                        "governor_name": player.get('governor_name'),
+                        "stats": stats
+                    }
+
+        # Create new baseline from first appearances
+        baseline_players = list(player_first_appearance.values())
+
+        # Update baseline in database
+        baselines_col = Database.get_collection("baselines")
+        result = await baselines_col.update_one(
+            {"kvk_season_id": kvk_season_id},
+            {"$set": {
+                "players": baseline_players,
+                "rebuilt_from_history": True,
+                "rebuild_timestamp": datetime.utcnow()
+            }},
+            upsert=True
+        )
+
+        # Now reprocess deltas with the new baseline
+        current_col = Database.get_collection("current_data")
+        current_data = await current_col.find_one({"kvk_season_id": kvk_season_id})
+
+        if current_data:
+            # Re-calculate deltas
+            players_with_deltas = ml_service.model.calculate_all_deltas(
+                baseline_players,
+                current_data.get('players', [])
+            )
+
+            # Update current_data
+            await current_col.update_one(
+                {"kvk_season_id": kvk_season_id},
+                {"$set": {"players": players_with_deltas}}
+            )
+
+            return {
+                "success": True,
+                "message": "Baseline rebuilt from upload history successfully",
+                "kvk_season_id": kvk_season_id,
+                "baseline_players_count": len(baseline_players),
+                "current_players_processed": len(players_with_deltas),
+                "uploads_analyzed": len(uploads)
+            }
+        else:
+            return {
+                "success": True,
+                "message": "Baseline rebuilt (no current data to reprocess)",
+                "kvk_season_id": kvk_season_id,
+                "baseline_players_count": len(baseline_players),
+                "uploads_analyzed": len(uploads)
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to rebuild baseline: {str(e)}"
+        )
+
+
 @router.post("/reprocess-deltas/{kvk_season_id}")
 async def reprocess_deltas(kvk_season_id: str):
     """

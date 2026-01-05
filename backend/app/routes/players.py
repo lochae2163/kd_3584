@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.services.ml_service import ml_service
+from app.services.player_classification_service import player_classification_service
 
 router = APIRouter(prefix="/api", tags=["Public API"])
 
@@ -94,3 +95,156 @@ async def get_player_timeline(
         raise HTTPException(status_code=404, detail=result.get('error'))
 
     return result
+
+
+@router.get("/leaderboard/combined")
+async def get_combined_leaderboard(
+    kvk_season_id: str = Query(default="season_1"),
+    sort_by: str = Query(default="kill_points_gained"),
+    limit: int = Query(default=100, le=500),
+    include_farms: bool = Query(default=True)
+):
+    """
+    Get combined leaderboard with main + farm account stats merged.
+
+    - Main accounts show combined stats (main + all linked farms)
+    - Farm accounts are hidden (merged into their main)
+    - Vacation accounts are excluded
+    - Dead weight players can be optionally excluded
+
+    Response includes farm details for expandable view
+    """
+    # Get regular leaderboard
+    leaderboard_result = await ml_service.get_leaderboard(
+        kvk_season_id=kvk_season_id,
+        sort_by=sort_by,
+        limit=1000  # Get all players first
+    )
+
+    if not leaderboard_result.get('success'):
+        raise HTTPException(status_code=404, detail=leaderboard_result.get('error'))
+
+    players = leaderboard_result.get('players', [])
+
+    # Get all players with classification
+    all_classified = await player_classification_service.get_all_players_with_classification(kvk_season_id)
+
+    # Create lookup for classification
+    classification_map = {p['governor_id']: p for p in all_classified}
+
+    # Combine main + farms
+    combined_players = []
+    processed_farms = set()
+
+    for player in players:
+        gov_id = player['governor_id']
+        classification = classification_map.get(gov_id, {})
+
+        account_type = classification.get('account_type', 'main')
+        is_dead_weight = classification.get('is_dead_weight', False)
+
+        # Skip farm accounts (they're merged into main)
+        if account_type == 'farm':
+            continue
+
+        # Skip vacation accounts
+        if account_type == 'vacation':
+            continue
+
+        # Start with main account stats
+        combined = {
+            'governor_id': player['governor_id'],
+            'governor_name': player['governor_name'],
+            'account_type': account_type,
+            'is_dead_weight': is_dead_weight,
+
+            # Main stats
+            'main_power': player['stats']['power'],
+            'main_kill_points': player['stats']['kill_points'],
+            'main_kill_points_gained': player['delta']['kill_points'],
+
+            # Combined stats (start with main)
+            'combined_power': player['stats']['power'],
+            'combined_kill_points': player['stats']['kill_points'],
+            'combined_deads': player['stats']['deads'],
+            'combined_t4_kills': player['stats']['t4_kills'],
+            'combined_t5_kills': player['stats']['t5_kills'],
+
+            # Combined deltas
+            'combined_power_gained': player['delta']['power'],
+            'combined_kill_points_gained': player['delta']['kill_points'],
+            'combined_deads_gained': player['delta']['deads'],
+            'combined_t4_kills_gained': player['delta']['t4_kills'],
+            'combined_t5_kills_gained': player['delta']['t5_kills'],
+
+            'farm_count': 0,
+            'farm_details': [],
+            'rank': player.get('rank', 0)
+        }
+
+        # Add linked farms if this is a main account
+        farm_ids = classification.get('farm_accounts', [])
+        if farm_ids and include_farms:
+            for farm_id in farm_ids:
+                # Find farm in players list
+                farm_player = next((p for p in players if p['governor_id'] == farm_id), None)
+                if farm_player:
+                    # Add farm stats to combined
+                    combined['combined_power'] += farm_player['stats']['power']
+                    combined['combined_kill_points'] += farm_player['stats']['kill_points']
+                    combined['combined_deads'] += farm_player['stats']['deads']
+                    combined['combined_t4_kills'] += farm_player['stats']['t4_kills']
+                    combined['combined_t5_kills'] += farm_player['stats']['t5_kills']
+
+                    combined['combined_power_gained'] += farm_player['delta']['power']
+                    combined['combined_kill_points_gained'] += farm_player['delta']['kill_points']
+                    combined['combined_deads_gained'] += farm_player['delta']['deads']
+                    combined['combined_t4_kills_gained'] += farm_player['delta']['t4_kills']
+                    combined['combined_t5_kills_gained'] += farm_player['delta']['t5_kills']
+
+                    # Add to farm details
+                    combined['farm_details'].append({
+                        'governor_id': farm_player['governor_id'],
+                        'governor_name': farm_player['governor_name'],
+                        'power': farm_player['stats']['power'],
+                        'kill_points': farm_player['stats']['kill_points'],
+                        'kill_points_gained': farm_player['delta']['kill_points'],
+                        't4_kills': farm_player['stats']['t4_kills'],
+                        't5_kills': farm_player['stats']['t5_kills']
+                    })
+
+                    combined['farm_count'] = len(combined['farm_details'])
+                    processed_farms.add(farm_id)
+
+        combined_players.append(combined)
+
+    # Sort by requested field
+    sort_field_map = {
+        'kill_points_gained': 'combined_kill_points_gained',
+        'power': 'combined_power',
+        'kill_points': 'combined_kill_points',
+        't4_kills': 'combined_t4_kills',
+        't5_kills': 'combined_t5_kills',
+        'deads': 'combined_deads'
+    }
+
+    sort_field = sort_field_map.get(sort_by, 'combined_kill_points_gained')
+    combined_players.sort(key=lambda x: x.get(sort_field, 0), reverse=True)
+
+    # Re-rank
+    for idx, player in enumerate(combined_players, 1):
+        player['rank'] = idx
+
+    # Apply limit
+    combined_players = combined_players[:limit]
+
+    return {
+        'success': True,
+        'kvk_season_id': kvk_season_id,
+        'player_count': len(combined_players),
+        'total_farms_merged': len(processed_farms),
+        'sort_by': sort_by,
+        'players': combined_players,
+        'baseline_date': leaderboard_result.get('baseline_date'),
+        'current_date': leaderboard_result.get('current_date')
+    }

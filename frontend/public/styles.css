@@ -150,11 +150,12 @@ body {
     }
 
     .stat-card .label {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
     }
 
     .stat-card .value {
-        font-size: 1.6rem;
+        font-size: 1.2rem;
+        word-break: break-word;
     }
 }
 
@@ -1421,12 +1422,12 @@ tbody tr:hover {
 .gained-stat {
     color: #10b981 !important;
     font-weight: 600 !important;
-    font-size: 1rem;
+    font-size: 0.75rem;
 }
 
 @media (max-width: 768px) {
     .gained-stat {
-        font-size: 0.85rem !important;
+        font-size: 0.7rem !important;
     }
 }
 

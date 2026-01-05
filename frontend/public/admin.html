@@ -23,6 +23,38 @@
             </div>
         </section>
 
+        <!-- Verified Deaths Upload -->
+        <section class="admin-section">
+            <h2>💀 Upload Verified Deaths (T4/T5 Breakdown)</h2>
+            <p class="section-desc">Upload verified T4 and T5 death data for accurate DKP contribution scoring.</p>
+
+            <!-- Verification Status -->
+            <div id="verification-status" class="verification-status">
+                <div class="loading">Loading verification status...</div>
+            </div>
+
+            <!-- Upload Form -->
+            <form id="verified-deaths-form">
+                <div class="form-group">
+                    <label for="verified-deaths-file">Select Excel File</label>
+                    <input type="file" id="verified-deaths-file" accept=".xlsx,.xls">
+                    <small style="color: #94a3b8; margin-top: 5px; display: block;">
+                        Required columns: governor_id, t4_deaths, t5_deaths, notes (optional)
+                    </small>
+                </div>
+                <button type="submit" class="upload-btn verified-deaths-btn">
+                    💀 Upload Verified Deaths
+                </button>
+            </form>
+            <div id="verified-deaths-message"></div>
+
+            <!-- Upload Results Preview -->
+            <div id="verified-deaths-results" style="display: none; margin-top: 20px;">
+                <h3>Upload Results</h3>
+                <div id="verified-deaths-results-content"></div>
+            </div>
+        </section>
+
         <!-- Player Classification -->
         <section class="admin-section">
             <h2>👥 Player Classification & Farm Linking</h2>

@@ -1026,6 +1026,187 @@ async function linkFarmAccount(farmGovernorId, mainGovernorId) {
 }
 
 // ========================================
+// Verified Deaths Upload
+// ========================================
+async function loadVerificationStatus() {
+    if (!activeSeason) return;
+
+    const statusDiv = document.getElementById('verification-status');
+
+    try {
+        const response = await fetch(`${API_URL}/admin/verified-deaths/status/${activeSeason}`);
+        const data = await response.json();
+
+        if (data.success) {
+            const percentage = data.verification_percentage || 0;
+            const verified = data.verified_count || 0;
+            const total = data.total_players || 0;
+            const unverified = data.unverified_count || 0;
+
+            statusDiv.innerHTML = `
+                <div class="status-card">
+                    <div class="status-header">
+                        <h3>📊 Verification Progress</h3>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="progress-text">${percentage.toFixed(1)}% Complete</div>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">✅ Verified</span>
+                            <span class="stat-value">${verified}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">❌ Unverified</span>
+                            <span class="stat-value">${unverified}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">👥 Total Players</span>
+                            <span class="stat-value">${total}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Failed to load verification status:', error);
+        statusDiv.innerHTML = '<div class="error">Failed to load verification status</div>';
+    }
+}
+
+// Handle verified deaths form submission
+const verifiedDeathsForm = document.getElementById('verified-deaths-form');
+const verifiedDeathsMessage = document.getElementById('verified-deaths-message');
+const verifiedDeathsResults = document.getElementById('verified-deaths-results');
+const verifiedDeathsResultsContent = document.getElementById('verified-deaths-results-content');
+
+if (verifiedDeathsForm) {
+    verifiedDeathsForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        if (!activeSeason) {
+            showMessage(verifiedDeathsMessage, 'error', 'No active season. Please activate a season first.');
+            return;
+        }
+
+        const fileInput = document.getElementById('verified-deaths-file');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showMessage(verifiedDeathsMessage, 'error', 'Please select an Excel file');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        showMessage(verifiedDeathsMessage, 'info', '⏳ Uploading and processing...');
+
+        try {
+            const response = await fetch(`${API_URL}/admin/verified-deaths/upload/${activeSeason}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const stats = result.results;
+                const status = result.verification_status;
+
+                showMessage(verifiedDeathsMessage, 'success',
+                    `✅ ${result.message}`
+                );
+
+                // Display results
+                verifiedDeathsResults.style.display = 'block';
+                verifiedDeathsResultsContent.innerHTML = `
+                    <div class="upload-summary">
+                        <h4>Upload Summary</h4>
+                        <div class="summary-stats">
+                            <div class="summary-stat success">
+                                <span class="stat-icon">✅</span>
+                                <span class="stat-number">${stats.success_count}</span>
+                                <span class="stat-label">Updated</span>
+                            </div>
+                            <div class="summary-stat warning">
+                                <span class="stat-icon">⚠️</span>
+                                <span class="stat-number">${stats.not_found_count}</span>
+                                <span class="stat-label">Not Found</span>
+                            </div>
+                            <div class="summary-stat error">
+                                <span class="stat-icon">❌</span>
+                                <span class="stat-number">${stats.error_count}</span>
+                                <span class="stat-label">Errors</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${stats.players_updated.length > 0 ? `
+                        <div class="players-updated">
+                            <h4>✅ Successfully Updated (${stats.players_updated.length})</h4>
+                            <div class="players-list">
+                                ${stats.players_updated.slice(0, 10).map(p => `
+                                    <div class="player-item">
+                                        <span class="player-name">${p.governor_name}</span>
+                                        <span class="player-deaths">T4: ${formatNumber(p.t4_deaths)} | T5: ${formatNumber(p.t5_deaths)}</span>
+                                    </div>
+                                `).join('')}
+                                ${stats.players_updated.length > 10 ? `
+                                    <div class="more-players">... and ${stats.players_updated.length - 10} more</div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${stats.players_not_found.length > 0 ? `
+                        <div class="players-not-found">
+                            <h4>⚠️ Players Not Found (${stats.players_not_found.length})</h4>
+                            <div class="players-list">
+                                ${stats.players_not_found.map(p => `
+                                    <div class="player-item error">
+                                        <span class="player-id">ID: ${p.governor_id}</span>
+                                        <span class="row-number">Row ${p.row}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${stats.errors.length > 0 ? `
+                        <div class="upload-errors">
+                            <h4>❌ Errors (${stats.errors.length})</h4>
+                            <div class="errors-list">
+                                ${stats.errors.map(e => `
+                                    <div class="error-item">
+                                        <span class="error-row">Row ${e.row}</span>
+                                        <span class="error-message">${e.error}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+
+                // Reload verification status
+                await loadVerificationStatus();
+
+                // Clear file input
+                fileInput.value = '';
+            } else {
+                showMessage(verifiedDeathsMessage, 'error', `❌ ${result.error || 'Upload failed'}`);
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            showMessage(verifiedDeathsMessage, 'error', `❌ Upload failed: ${error.message}`);
+        }
+    });
+}
+
+// ========================================
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1036,4 +1217,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadDataStatus();
     loadHistory();
     loadFileManagement();
+    loadVerificationStatus();
 });

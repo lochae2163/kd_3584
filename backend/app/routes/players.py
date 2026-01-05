@@ -124,7 +124,7 @@ async def get_combined_leaderboard(
     if not leaderboard_result.get('success'):
         raise HTTPException(status_code=404, detail=leaderboard_result.get('error'))
 
-    players = leaderboard_result.get('players', [])
+    players = leaderboard_result.get('leaderboard', [])
 
     # Get all players with classification
     all_classified = await player_classification_service.get_all_players_with_classification(kvk_season_id)

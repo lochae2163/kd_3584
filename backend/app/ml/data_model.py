@@ -466,27 +466,35 @@ class KvKDataModel:
             gov_id = player.get('governor_id')
             current_stats = player.get('stats', {})
 
+            # Check if player has all zero stats (migrated out or account reset)
+            has_any_stats = any(current_stats.get(field, 0) > 0 for field in self.NUMERIC_COLUMNS)
+
             # Check if player exists in baseline
-            if gov_id in baseline_lookup:
-                # Existing player - calculate delta normally
+            if gov_id in baseline_lookup and has_any_stats:
+                # Existing player with stats - calculate delta normally
                 baseline_stats = baseline_lookup[gov_id]
                 delta = self.calculate_player_delta(baseline_stats, current_stats)
                 in_baseline = True
+                newly_added = False
             else:
-                # New player - use current stats as new baseline
+                # New player OR migrated out player - use current stats as new baseline
                 # Set delta to zero for all stats
                 baseline_stats = current_stats
                 delta = {field: 0 for field in self.NUMERIC_COLUMNS}
-                in_baseline = False
+                in_baseline = gov_id in baseline_lookup  # True if was in baseline
+                newly_added = True
 
-                # Track new player to add to baseline
+                # Track new/returning player to add to baseline
                 new_players_added.append({
                     "governor_id": gov_id,
                     "governor_name": player.get('governor_name'),
                     "stats": current_stats
                 })
 
-                logger.info(f"New player detected: {player.get('governor_name')} (ID: {gov_id}) - Setting as new baseline")
+                if gov_id not in baseline_lookup:
+                    logger.info(f"New player detected: {player.get('governor_name')} (ID: {gov_id}) - Setting as new baseline")
+                else:
+                    logger.info(f"Player returned or reset: {player.get('governor_name')} (ID: {gov_id}) - Resetting baseline to current stats")
 
             # Add to results
             results.append({
@@ -495,7 +503,7 @@ class KvKDataModel:
                 "stats": current_stats,
                 "delta": delta,
                 "in_baseline": in_baseline,
-                "newly_added_to_baseline": not in_baseline
+                "newly_added_to_baseline": newly_added
             })
 
         # Log summary if new players were added

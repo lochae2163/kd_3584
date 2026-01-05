@@ -296,7 +296,6 @@ function displayLeaderboard() {
 // Filter Functions
 // ========================================
 function applyFilters() {
-    const accountTypeFilter = document.getElementById('account-type-filter').value;
     const verificationFilter = document.getElementById('verification-filter').value;
     const searchTerm = document.getElementById('player-search').value.toLowerCase();
 
@@ -312,11 +311,7 @@ function applyFilters() {
             (verificationFilter === 'verified' && contribution.has_verified_deaths) ||
             (verificationFilter === 'unverified' && !contribution.has_verified_deaths);
 
-        // Account type filter (for now, show all since we don't have account_type in contribution data)
-        // This can be enhanced if account_type is added to the contribution endpoint
-        const matchesAccountType = accountTypeFilter === 'all' || accountTypeFilter === 'main';
-
-        return matchesSearch && matchesVerification && matchesAccountType;
+        return matchesSearch && matchesVerification;
     });
 
     displayLeaderboard();
@@ -339,7 +334,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Setup filters
-    document.getElementById('account-type-filter').addEventListener('change', applyFilters);
     document.getElementById('verification-filter').addEventListener('change', applyFilters);
     document.getElementById('player-search').addEventListener('input', applyFilters);
 

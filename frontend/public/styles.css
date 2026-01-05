@@ -406,9 +406,9 @@ td.text-right {
 }
 
 td {
-    padding: 16px 20px;
+    padding: 12px 10px;
     border-bottom: 1px solid #334155;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     white-space: nowrap;
 }
 
@@ -437,15 +437,15 @@ tbody tr:hover {
 
     td {
         padding: 10px 8px;
-        font-size: 0.85rem;
+        font-size: 0.75rem;
     }
 
     .player-name {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
     }
 
     .player-id {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
 
     /* Larger touch targets for mobile */
@@ -469,22 +469,24 @@ tr.rank-3 {
 }
 
 .rank-badge {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 }
 
 .rank-number {
     color: #64748b;
     font-weight: 500;
+    font-size: 0.85rem;
 }
 
 .player-name {
     font-weight: 600;
     color: #ffffff;
     margin-bottom: 3px;
+    font-size: 0.9rem;
 }
 
 .player-id {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #64748b;
 }
 
@@ -493,6 +495,7 @@ tr.rank-3 {
     color: #ffffff;
     font-weight: 500;
     white-space: nowrap;
+    font-size: 0.85rem;
 }
 
 /* Delta indicators */

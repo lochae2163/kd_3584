@@ -585,3 +585,92 @@ async def reprocess_deltas(kvk_season_id: str):
             status_code=500,
             detail=f"Failed to reprocess deltas: {str(e)}"
         )
+
+
+@router.post("/reprocess-upload-history/{kvk_season_id}")
+async def reprocess_upload_history(kvk_season_id: str):
+    """
+    Reprocess all upload history entries with the current baseline.
+
+    This endpoint:
+    - Fetches the current baseline
+    - Re-calculates deltas for ALL upload history entries
+    - Updates each upload in the history with correct deltas
+
+    Use this after rebuilding the baseline to fix historical delta calculations
+    and ensure timeline charts display correctly.
+    """
+    try:
+        # Get baseline
+        baselines_col = Database.get_collection("baselines")
+        baseline = await baselines_col.find_one({"kvk_season_id": kvk_season_id})
+
+        if not baseline:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No baseline found for season {kvk_season_id}"
+            )
+
+        baseline_players = baseline.get('players', [])
+
+        # Get all upload history
+        history_col = Database.get_collection("upload_history")
+        uploads = await history_col.find(
+            {"kvk_season_id": kvk_season_id}
+        ).sort("timestamp", 1).to_list(length=100)
+
+        if not uploads:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No upload history found for season {kvk_season_id}"
+            )
+
+        # Reprocess each upload
+        reprocessed_count = 0
+        for upload in uploads:
+            upload_id = upload['_id']
+            upload_players = upload.get('players', [])
+
+            # Re-calculate deltas for this upload
+            players_with_deltas = ml_service.model.calculate_all_deltas(
+                baseline_players,
+                upload_players
+            )
+
+            # Re-rank players
+            ranked_players = ml_service.model.rank_players(
+                players_with_deltas,
+                "kill_points_gained"
+            )
+
+            # Recalculate summary
+            summary = ml_service.model.calculate_summary_stats(ranked_players)
+
+            # Update this upload in history
+            await history_col.update_one(
+                {"_id": upload_id},
+                {"$set": {
+                    "players": ranked_players,
+                    "summary": summary,
+                    "reprocessed": True,
+                    "player_count": len(ranked_players)
+                }}
+            )
+
+            reprocessed_count += 1
+
+        return {
+            "success": True,
+            "message": f"Reprocessed {reprocessed_count} upload history entries",
+            "kvk_season_id": kvk_season_id,
+            "baseline_players_count": len(baseline_players),
+            "uploads_reprocessed": reprocessed_count
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to reprocess upload history: {str(e)}"
+        )

@@ -5,7 +5,7 @@
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:8000'
     : 'https://kd3584-production.up.railway.app';
-const KVK_SEASON_ID = 'season_1';
+let KVK_SEASON_ID = null;
 
 // ========================================
 // Get Player ID from URL
@@ -541,7 +541,27 @@ function renderTimelineSnapshots(data) {
 // ========================================
 // Initialize
 // ========================================
+async function initializeApp() {
+    try {
+        // Fetch active season
+        const response = await fetch(`${API_URL}/admin/seasons/active`);
+        const data = await response.json();
+
+        if (data.success && data.season) {
+            KVK_SEASON_ID = data.season.season_id;
+            await loadPlayerData();
+            await loadPlayerTimeline();
+        } else {
+            playerName.textContent = 'Error: No active season';
+            statsCards.innerHTML = '<div class="error">No active season found. Please activate a season in the admin panel.</div>';
+        }
+    } catch (error) {
+        console.error('Failed to fetch active season:', error);
+        playerName.textContent = 'Error loading season';
+        statsCards.innerHTML = '<div class="error">Failed to load active season.</div>';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    loadPlayerData();
-    loadPlayerTimeline();
+    initializeApp();
 });

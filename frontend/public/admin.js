@@ -958,7 +958,8 @@ function openClassifyModal(governorId, governorName) {
         `Enter number (1-3):`
     );
 
-    if (!accountType) return;
+    // User clicked Cancel on first prompt
+    if (accountType === null) return;
 
     const typeMap = {
         '1': 'main',
@@ -966,14 +967,20 @@ function openClassifyModal(governorId, governorName) {
         '3': 'vacation'
     };
 
-    const type = typeMap[accountType];
+    const type = typeMap[accountType.trim()];
     if (!type) {
         alert('Invalid selection. Please enter 1, 2, or 3.');
         return;
     }
 
+    // Ask about dead weight status
     const isDeadWeight = confirm('Mark as Dead Weight (inactive player)?');
-    const notes = prompt('Add classification notes (optional):') || '';
+
+    // Ask for notes (can be empty string)
+    const notes = prompt('Add classification notes (optional):');
+
+    // User clicked Cancel on notes prompt
+    if (notes === null) return;
 
     classifyPlayer(governorId, type, isDeadWeight, notes);
 }

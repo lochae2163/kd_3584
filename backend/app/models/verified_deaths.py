@@ -42,6 +42,7 @@ class ContributionScore(BaseModel):
     """Player's calculated contribution score using verified deaths."""
     governor_id: str
     governor_name: str
+    rank: int = Field(default=0, description="Rank by contribution score")
 
     # Kill scores
     t4_kill_score: int = Field(default=0, description="T4 kills × 1")

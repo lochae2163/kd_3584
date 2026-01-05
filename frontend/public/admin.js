@@ -740,6 +740,278 @@ async function createSeason(seasonName, description) {
 }
 
 // ========================================
+// Player Classification
+// ========================================
+async function loadPlayerClassification() {
+    const playerClassification = document.getElementById('player-classification');
+
+    if (!activeSeason) {
+        playerClassification.innerHTML = `<div class="message warning">No active season. Please activate a season first.</div>`;
+        return;
+    }
+
+    try {
+        const [playersResponse, summaryResponse] = await Promise.all([
+            fetch(`${API_URL}/admin/players/all-with-classification/${activeSeason.season_id}`),
+            fetch(`${API_URL}/admin/players/stats/classification-summary/${activeSeason.season_id}`)
+        ]);
+
+        const playersData = await playersResponse.json();
+        const summaryData = await summaryResponse.json();
+
+        const players = playersData.players || [];
+        const summary = summaryData.summary || {};
+
+        let html = `
+            <div class="classification-header">
+                <div class="classification-summary">
+                    <h3>Classification Summary</h3>
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Players:</span>
+                            <span class="stat-value">${summary.total_players || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Main Accounts:</span>
+                            <span class="stat-value main">${summary.main_accounts || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Farm Accounts:</span>
+                            <span class="stat-value farm">${summary.farm_accounts || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Vacation:</span>
+                            <span class="stat-value vacation">${summary.vacation_accounts || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Dead Weight:</span>
+                            <span class="stat-value dead">${summary.dead_weight || 0}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Farm Links:</span>
+                            <span class="stat-value">${summary.total_farm_links || 0}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="classification-filters">
+                    <input type="text" id="player-search" placeholder="🔍 Search player name or ID..." class="player-search-input">
+                    <select id="type-filter" class="type-filter">
+                        <option value="all">All Types</option>
+                        <option value="main">Main Accounts</option>
+                        <option value="farm">Farm Accounts</option>
+                        <option value="vacation">Vacation</option>
+                    </select>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-dead-weight"> Show Dead Weight Only
+                    </label>
+                </div>
+            </div>
+
+            <div class="players-table-container">
+                <table class="players-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Governor</th>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Power</th>
+                            <th>KP Gained</th>
+                            <th>Farm Links</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="players-tbody">
+                        ${renderPlayerRows(players)}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        playerClassification.innerHTML = html;
+
+        // Add event listeners
+        document.getElementById('player-search').addEventListener('input', filterPlayers);
+        document.getElementById('type-filter').addEventListener('change', filterPlayers);
+        document.getElementById('show-dead-weight').addEventListener('change', filterPlayers);
+
+    } catch (error) {
+        playerClassification.innerHTML = `<div class="message error">Failed to load players: ${error.message}</div>`;
+    }
+}
+
+function renderPlayerRows(players) {
+    if (!players || players.length === 0) {
+        return '<tr><td colspan="8" style="text-align: center; padding: 20px;">No players found</td></tr>';
+    }
+
+    return players.map(player => {
+        const accountType = player.account_type || 'main';
+        const typeClass = accountType;
+        const typeBadge = {
+            'main': '👤 Main',
+            'farm': '🌾 Farm',
+            'vacation': '🏖️ Vacation'
+        }[accountType] || '👤 Main';
+
+        const linkedInfo = player.linked_to_main ?
+            `<span class="linked-badge">→ Linked to ${player.linked_to_main}</span>` : '';
+
+        const farmCount = (player.farm_accounts || []).length;
+        const farmBadge = farmCount > 0 ?
+            `<span class="farm-count-badge">${farmCount} ${farmCount === 1 ? 'farm' : 'farms'}</span>` :
+            '<span class="no-farms">No farms</span>';
+
+        const deadWeightClass = player.is_dead_weight ? ' dead-weight' : '';
+
+        return `
+            <tr class="player-row ${typeClass}${deadWeightClass}" data-governor-id="${player.governor_id}">
+                <td>${player.rank || '-'}</td>
+                <td>
+                    <div class="player-name">${player.governor_name}</div>
+                    ${linkedInfo}
+                    ${player.is_dead_weight ? '<span class="dead-badge">💀 Dead Weight</span>' : ''}
+                </td>
+                <td><code>${player.governor_id}</code></td>
+                <td><span class="type-badge ${typeClass}">${typeBadge}</span></td>
+                <td>${formatNumber(player.power)}</td>
+                <td>${formatNumber(player.kill_points_gained)}</td>
+                <td>${farmBadge}</td>
+                <td>
+                    <button class="classify-btn" onclick="openClassifyModal('${player.governor_id}', '${player.governor_name}')">
+                        ⚙️ Classify
+                    </button>
+                    ${accountType === 'main' ? `
+                        <button class="link-farm-btn" onclick="openLinkFarmModal('${player.governor_id}', '${player.governor_name}')">
+                            🔗 Link Farm
+                        </button>
+                    ` : ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function filterPlayers() {
+    const searchTerm = document.getElementById('player-search').value.toLowerCase();
+    const typeFilter = document.getElementById('type-filter').value;
+    const showDeadWeight = document.getElementById('show-dead-weight').checked;
+
+    const rows = document.querySelectorAll('.player-row');
+
+    rows.forEach(row => {
+        const name = row.querySelector('.player-name').textContent.toLowerCase();
+        const id = row.querySelector('code').textContent;
+        const type = row.classList.contains('farm') ? 'farm' :
+                     row.classList.contains('vacation') ? 'vacation' : 'main';
+        const isDeadWeight = row.classList.contains('dead-weight');
+
+        const matchesSearch = name.includes(searchTerm) || id.includes(searchTerm);
+        const matchesType = typeFilter === 'all' || type === typeFilter;
+        const matchesDeadWeight = !showDeadWeight || isDeadWeight;
+
+        if (matchesSearch && matchesType && matchesDeadWeight) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function openClassifyModal(governorId, governorName) {
+    const accountType = prompt(
+        `Classify ${governorName} (${governorId})\n\n` +
+        `Enter account type:\n` +
+        `1 = Main Account\n` +
+        `2 = Farm Account\n` +
+        `3 = Vacation (excluded from contribution)\n\n` +
+        `Enter number (1-3):`
+    );
+
+    if (!accountType) return;
+
+    const typeMap = {
+        '1': 'main',
+        '2': 'farm',
+        '3': 'vacation'
+    };
+
+    const type = typeMap[accountType];
+    if (!type) {
+        alert('Invalid selection. Please enter 1, 2, or 3.');
+        return;
+    }
+
+    const isDeadWeight = confirm('Mark as Dead Weight (inactive player)?');
+    const notes = prompt('Add classification notes (optional):') || '';
+
+    classifyPlayer(governorId, type, isDeadWeight, notes);
+}
+
+async function classifyPlayer(governorId, accountType, isDeadWeight, notes) {
+    try {
+        const response = await fetch(`${API_URL}/admin/players/classify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                governor_id: governorId,
+                kvk_season_id: activeSeason.season_id,
+                account_type: accountType,
+                is_dead_weight: isDeadWeight,
+                classification_notes: notes
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`✅ Player classified as ${accountType}!`);
+            await loadPlayerClassification();
+        } else {
+            throw new Error(result.error || 'Classification failed');
+        }
+    } catch (error) {
+        alert(`❌ Classification failed: ${error.message}`);
+    }
+}
+
+function openLinkFarmModal(mainGovernorId, mainGovernorName) {
+    const farmId = prompt(
+        `Link Farm to ${mainGovernorName}\n\n` +
+        `Enter the Governor ID of the farm account to link:`
+    );
+
+    if (!farmId) return;
+
+    linkFarmAccount(farmId, mainGovernorId);
+}
+
+async function linkFarmAccount(farmGovernorId, mainGovernorId) {
+    try {
+        const response = await fetch(`${API_URL}/admin/players/link-farm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                farm_governor_id: farmGovernorId,
+                main_governor_id: mainGovernorId,
+                kvk_season_id: activeSeason.season_id
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert(`✅ Farm ${farmGovernorId} linked to main ${mainGovernorId}!`);
+            await loadPlayerClassification();
+        } else {
+            throw new Error(result.error || 'Link failed');
+        }
+    } catch (error) {
+        alert(`❌ Link failed: ${error.message}`);
+    }
+}
+
+// ========================================
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -747,4 +1019,9 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDataStatus();
     loadHistory();
     loadFileManagement();
+
+    // Load player classification after a short delay to ensure activeSeason is set
+    setTimeout(() => {
+        loadPlayerClassification();
+    }, 500);
 });

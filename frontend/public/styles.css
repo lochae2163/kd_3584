@@ -1890,3 +1890,314 @@ tbody tr:hover {
         min-width: auto;
     }
 }
+
+/* ========================================
+   Player Classification
+======================================== */
+.player-classification {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 25px;
+}
+
+.classification-header {
+    margin-bottom: 25px;
+}
+
+.classification-summary {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #475569;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.classification-summary h3 {
+    font-size: 1.1rem;
+    color: #ffffff;
+    margin-bottom: 15px;
+}
+
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #0f172a;
+    border-radius: 6px;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+.stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.stat-value.main {
+    color: #3b82f6;
+}
+
+.stat-value.farm {
+    color: #10b981;
+}
+
+.stat-value.vacation {
+    color: #f59e0b;
+}
+
+.stat-value.dead {
+    color: #ef4444;
+}
+
+.classification-filters {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.player-search-input {
+    flex: 1;
+    min-width: 250px;
+    padding: 10px 15px;
+    background-color: #0f172a;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+}
+
+.player-search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.type-filter {
+    padding: 10px 15px;
+    background-color: #0f172a;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.type-filter:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.players-table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.players-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #0f172a;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.players-table thead {
+    background-color: #1e293b;
+}
+
+.players-table th {
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #94a3b8;
+    border-bottom: 2px solid #334155;
+}
+
+.players-table tbody tr {
+    border-bottom: 1px solid #1e293b;
+    transition: all 0.2s;
+}
+
+.players-table tbody tr:hover {
+    background-color: #1e293b;
+}
+
+.players-table td {
+    padding: 12px 15px;
+    font-size: 0.9rem;
+    color: #e2e8f0;
+}
+
+.players-table code {
+    background-color: #1e293b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #10b981;
+}
+
+.player-row.farm {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.player-row.vacation {
+    background-color: rgba(245, 158, 11, 0.05);
+}
+
+.player-row.dead-weight {
+    opacity: 0.6;
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.player-name {
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.type-badge.main {
+    background-color: #3b82f6;
+    color: #ffffff;
+}
+
+.type-badge.farm {
+    background-color: #10b981;
+    color: #ffffff;
+}
+
+.type-badge.vacation {
+    background-color: #f59e0b;
+    color: #ffffff;
+}
+
+.linked-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.farm-count-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background-color: #10b981;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.no-farms {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.dead-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #ef4444;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-top: 4px;
+}
+
+.classify-btn, .link-farm-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 5px;
+}
+
+.classify-btn {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.classify-btn:hover {
+    background-color: #2563eb;
+    transform: translateY(-1px);
+}
+
+.link-farm-btn {
+    background-color: #10b981;
+    color: white;
+}
+
+.link-farm-btn:hover {
+    background-color: #059669;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .classification-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .player-search-input {
+        min-width: auto;
+    }
+
+    .summary-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .players-table {
+        font-size: 0.8rem;
+    }
+
+    .players-table th,
+    .players-table td {
+        padding: 8px 10px;
+    }
+
+    .classify-btn, .link-farm-btn {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+}

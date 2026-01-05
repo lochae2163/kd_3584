@@ -466,8 +466,10 @@ class KvKDataModel:
             gov_id = player.get('governor_id')
             current_stats = player.get('stats', {})
 
-            # Check if player has all zero stats (migrated out or account reset)
-            has_any_stats = any(current_stats.get(field, 0) > 0 for field in self.NUMERIC_COLUMNS)
+            # Check if player has any KvK-relevant stats (kill_points, deads, t4_kills, t5_kills)
+            # Power alone doesn't count as they might have migrated out
+            kvk_stats_fields = ['kill_points', 'deads', 't4_kills', 't5_kills']
+            has_any_stats = any(current_stats.get(field, 0) > 0 for field in kvk_stats_fields)
 
             # Check if player exists in baseline
             if gov_id in baseline_lookup and has_any_stats:

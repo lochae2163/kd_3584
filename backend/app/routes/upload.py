@@ -334,3 +334,93 @@ async def delete_history_entry(history_id: str):
         "deleted_file": history_entry.get("file_name", "Unknown"),
         "deleted_timestamp": history_entry.get("timestamp")
     }
+
+
+@router.post("/reprocess-deltas/{kvk_season_id}")
+async def reprocess_deltas(kvk_season_id: str):
+    """
+    Re-process current data to fix delta calculations.
+
+    This endpoint:
+    - Re-calculates deltas for all players
+    - Fixes negative deltas for migrated out/back players
+    - Updates baseline with new/returning players
+
+    Use this after updating the delta calculation logic or to fix data issues.
+    """
+    try:
+        # Get baseline
+        baselines_col = Database.get_collection("baselines")
+        baseline = await baselines_col.find_one({"kvk_season_id": kvk_season_id})
+
+        if not baseline:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No baseline found for season {kvk_season_id}"
+            )
+
+        # Get current data
+        current_col = Database.get_collection("current_data")
+        current_data = await current_col.find_one({"kvk_season_id": kvk_season_id})
+
+        if not current_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No current data found for season {kvk_season_id}"
+            )
+
+        # Re-calculate deltas using ML service
+        players_with_deltas = ml_service.model.calculate_all_deltas(
+            baseline.get('players', []),
+            current_data.get('players', [])
+        )
+
+        # Update current_data
+        await current_col.update_one(
+            {"kvk_season_id": kvk_season_id},
+            {"$set": {"players": players_with_deltas}}
+        )
+
+        # Update baseline with new/returning players
+        new_players = [p for p in players_with_deltas if p.get('newly_added_to_baseline', False)]
+        if new_players:
+            baseline_players = baseline.get('players', [])
+
+            for new_player in new_players:
+                # Check if already in baseline
+                existing_idx = next((i for i, p in enumerate(baseline_players)
+                                   if p['governor_id'] == new_player['governor_id']), None)
+
+                baseline_entry = {
+                    "governor_id": new_player['governor_id'],
+                    "governor_name": new_player['governor_name'],
+                    "stats": new_player['stats']
+                }
+
+                if existing_idx is not None:
+                    # Update existing entry (player returned/reset)
+                    baseline_players[existing_idx] = baseline_entry
+                else:
+                    # Add new entry
+                    baseline_players.append(baseline_entry)
+
+            await baselines_col.update_one(
+                {"kvk_season_id": kvk_season_id},
+                {"$set": {"players": baseline_players}}
+            )
+
+        return {
+            "success": True,
+            "message": "Delta recalculation completed successfully",
+            "kvk_season_id": kvk_season_id,
+            "players_processed": len(players_with_deltas),
+            "new_or_reset_players": len(new_players)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to reprocess deltas: {str(e)}"
+        )

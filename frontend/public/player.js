@@ -543,12 +543,13 @@ function renderTimelineSnapshots(data) {
 // ========================================
 async function initializeApp() {
     try {
-        // Fetch active season
-        const response = await fetch(`${API_URL}/admin/seasons/active`);
+        // Fetch active season from public API endpoint
+        const response = await fetch(`${API_URL}/api/seasons/active`);
         const data = await response.json();
 
-        if (data.success && data.season) {
-            KVK_SEASON_ID = data.season.season_id;
+        if (data.success && (data.season || data.season_id)) {
+            // Handle both response formats
+            KVK_SEASON_ID = data.season ? data.season.season_id : data.season_id;
             await loadPlayerData();
             await loadPlayerTimeline();
         } else {

@@ -39,11 +39,12 @@ function showError(elementId, message) {
 // ========================================
 async function loadActiveSeason() {
     try {
-        const response = await fetch(`${API_URL}/admin/seasons/active`);
+        const response = await fetch(`${API_URL}/api/seasons/active`);
         const data = await response.json();
 
-        if (data.success && data.season) {
-            activeSeason = data.season;
+        if (data.success && (data.season || data.season_id)) {
+            // Handle both response formats
+            activeSeason = data.season || data;
             displaySeasonInfo();
             return true;
         } else {

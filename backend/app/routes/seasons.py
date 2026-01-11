@@ -1,8 +1,9 @@
 """
 Season management API routes
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from app.services.season_service import season_service
+from app.services.auth_service import get_current_admin
 from app.models.season import CreateSeasonRequest, ActivateSeasonRequest, ArchiveSeasonRequest
 from typing import List, Dict
 
@@ -10,7 +11,10 @@ router = APIRouter(prefix="/admin/seasons", tags=["Season Management"])
 
 
 @router.post("/create")
-async def create_season(request: CreateSeasonRequest):
+async def create_season(
+    request: CreateSeasonRequest,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Create a new KvK season
 
@@ -84,7 +88,10 @@ async def get_season(season_id: str):
 
 
 @router.post("/activate")
-async def activate_season(request: ActivateSeasonRequest):
+async def activate_season(
+    request: ActivateSeasonRequest,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Activate a season
 
@@ -101,7 +108,10 @@ async def activate_season(request: ActivateSeasonRequest):
 
 
 @router.post("/archive")
-async def archive_season(request: ArchiveSeasonRequest):
+async def archive_season(
+    request: ArchiveSeasonRequest,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Archive a season (mark as read-only)
 
@@ -157,7 +167,10 @@ async def get_season_stats(season_id: str):
 
 
 @router.post("/{season_id}/mark-final-uploaded")
-async def mark_final_data_uploaded(season_id: str):
+async def mark_final_data_uploaded(
+    season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Mark that final comprehensive data has been uploaded
 

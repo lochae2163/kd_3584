@@ -3,10 +3,11 @@ Final KvK Data Upload Routes
 
 Comprehensive end-of-KvK data processing endpoint.
 """
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from app.services.player_classification_service import player_classification_service
 from app.services.contribution_service import contribution_service
 from app.services.season_service import season_service
+from app.services.auth_service import get_current_admin
 from app.database import Database
 import pandas as pd
 import io
@@ -20,7 +21,8 @@ router = APIRouter(prefix="/admin/final-kvk", tags=["Final KvK"])
 @router.post("/upload/{kvk_season_id}")
 async def upload_final_kvk_data(
     kvk_season_id: str,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_admin: str = Depends(get_current_admin)
 ):
     """
     Upload comprehensive final KvK data (all-in-one).
@@ -221,7 +223,10 @@ async def upload_final_kvk_data(
 
 
 @router.post("/mark-complete/{kvk_season_id}")
-async def mark_season_complete(kvk_season_id: str):
+async def mark_season_complete(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Mark season as completed (final data uploaded).
 

@@ -3,8 +3,9 @@ Verified Deaths API Routes
 
 Endpoints for uploading and managing verified T4/T5 death data.
 """
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Depends
 from app.services.contribution_service import contribution_service
+from app.services.auth_service import get_current_admin
 from app.database import Database
 from typing import List
 import pandas as pd
@@ -19,7 +20,8 @@ router = APIRouter(prefix="/admin/verified-deaths", tags=["Verified Deaths"])
 @router.post("/upload/{kvk_season_id}")
 async def upload_verified_deaths(
     kvk_season_id: str,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_admin: str = Depends(get_current_admin)
 ):
     """
     Upload Excel file with verified T4/T5 death data.
@@ -279,7 +281,8 @@ async def get_player_verified_deaths(
 @router.delete("/{kvk_season_id}/{governor_id}")
 async def delete_verified_deaths(
     kvk_season_id: str,
-    governor_id: str
+    governor_id: str,
+    current_admin: str = Depends(get_current_admin)
 ):
     """
     Remove verified death data for a player.

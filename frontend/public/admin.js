@@ -7,6 +7,28 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     : 'https://kd3584-production.up.railway.app';
 
 // ========================================
+// Authentication Helper
+// ========================================
+function getAuthHeaders() {
+    const token = localStorage.getItem('admin_token');
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
+}
+
+function handleAuthError(response) {
+    if (response.status === 401 || response.status === 403) {
+        // Token invalid or expired, redirect to login
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_username');
+        window.location.href = 'login.html';
+        return true;
+    }
+    return false;
+}
+
+// ========================================
 // DOM Elements
 // ========================================
 const dataStatus = document.getElementById('data-status');
@@ -1418,6 +1440,23 @@ if (markCompleteBtn) {
 // Initialize
 // ========================================
 document.addEventListener('DOMContentLoaded', async () => {
+    // Display username
+    const adminUsername = localStorage.getItem('admin_username');
+    const usernameDisplay = document.getElementById('admin-username-display');
+    if (usernameDisplay && adminUsername) {
+        usernameDisplay.textContent = `👤 ${adminUsername}`;
+    }
+
+    // Setup logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_username');
+            window.location.href = 'login.html';
+        });
+    }
+
     // Load seasons first (this will also load player classification)
     await loadSeasons();
 

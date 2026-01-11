@@ -1,8 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Depends
 from typing import Optional
 from bson import ObjectId
 from app.services.ml_service import ml_service
 from app.services.season_service import season_service
+from app.services.auth_service import get_current_admin
 from app.database import Database
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -12,7 +13,8 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 async def upload_baseline(
     file: UploadFile = File(...),
     kvk_season_id: str = Query(default="season_1"),
-    kingdom_id: str = Query(default="3584")
+    kingdom_id: str = Query(default="3584"),
+    current_admin: str = Depends(get_current_admin)
 ):
     """
     Upload BASELINE file (CSV or Excel).
@@ -78,7 +80,8 @@ async def upload_current(
     file: UploadFile = File(...),
     kvk_season_id: str = Query(default="season_1"),
     description: str = Query(default=""),
-    kingdom_id: str = Query(default="3584")
+    kingdom_id: str = Query(default="3584"),
+    current_admin: str = Depends(get_current_admin)
 ):
     """
     Upload CURRENT data file (CSV or Excel).
@@ -206,7 +209,10 @@ async def get_upload_history(kvk_season_id: str):
 
 
 @router.delete("/delete/baseline/{kvk_season_id}")
-async def delete_baseline(kvk_season_id: str):
+async def delete_baseline(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Delete baseline data for a season.
 
@@ -235,7 +241,10 @@ async def delete_baseline(kvk_season_id: str):
 
 
 @router.delete("/delete/current/{kvk_season_id}")
-async def delete_current_data(kvk_season_id: str):
+async def delete_current_data(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Delete current data and all upload history for a season.
 
@@ -269,7 +278,10 @@ async def delete_current_data(kvk_season_id: str):
 
 
 @router.delete("/delete/all/{kvk_season_id}")
-async def delete_all_data(kvk_season_id: str):
+async def delete_all_data(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Delete ALL data for a season (baseline + current + history).
 
@@ -301,7 +313,10 @@ async def delete_all_data(kvk_season_id: str):
 
 
 @router.delete("/delete/history/{history_id}")
-async def delete_history_entry(history_id: str):
+async def delete_history_entry(
+    history_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Delete a specific upload history entry by its ID.
 
@@ -391,7 +406,10 @@ async def find_player_history(kvk_season_id: str, governor_id: str):
 
 
 @router.post("/rebuild-baseline-from-history/{kvk_season_id}")
-async def rebuild_baseline_from_history(kvk_season_id: str):
+async def rebuild_baseline_from_history(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Rebuild baseline using first appearance of each player from upload history.
 
@@ -498,7 +516,10 @@ async def rebuild_baseline_from_history(kvk_season_id: str):
 
 
 @router.post("/reprocess-deltas/{kvk_season_id}")
-async def reprocess_deltas(kvk_season_id: str):
+async def reprocess_deltas(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Re-process current data to fix delta calculations.
 
@@ -588,7 +609,10 @@ async def reprocess_deltas(kvk_season_id: str):
 
 
 @router.post("/reprocess-upload-history/{kvk_season_id}")
-async def reprocess_upload_history(kvk_season_id: str):
+async def reprocess_upload_history(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Reprocess all upload history entries with the current baseline.
 

@@ -1,8 +1,9 @@
 """
 Player classification API routes
 """
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from app.services.player_classification_service import player_classification_service
+from app.services.auth_service import get_current_admin
 from app.models.player_classification import (
     ClassifyPlayerRequest,
     LinkFarmAccountRequest,
@@ -15,7 +16,10 @@ router = APIRouter(prefix="/admin/players", tags=["Player Classification"])
 
 
 @router.post("/classify")
-async def classify_player(request: ClassifyPlayerRequest):
+async def classify_player(
+    request: ClassifyPlayerRequest,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Classify a player's account type
 
@@ -38,7 +42,10 @@ async def classify_player(request: ClassifyPlayerRequest):
 
 
 @router.post("/link-farm")
-async def link_farm_account(request: LinkFarmAccountRequest):
+async def link_farm_account(
+    request: LinkFarmAccountRequest,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Link a farm account to a main account
 
@@ -59,7 +66,10 @@ async def link_farm_account(request: LinkFarmAccountRequest):
 
 
 @router.post("/unlink-farm")
-async def unlink_farm_account(request: UnlinkFarmAccountRequest):
+async def unlink_farm_account(
+    request: UnlinkFarmAccountRequest,
+    current_admin: str = Depends(get_current_admin)
+):
     """
     Unlink a farm account from a main account
 

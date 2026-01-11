@@ -7,12 +7,31 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Authentication Check -->
+    <script>
+        // Check authentication before loading page
+        const adminToken = localStorage.getItem('admin_token');
+        const adminUsername = localStorage.getItem('admin_username');
+
+        if (!adminToken) {
+            // No token, redirect to login
+            window.location.href = 'login.html';
+        }
+
+        // TODO: Optionally verify token with backend
+        // For now, just check if token exists
+    </script>
+
     <div class="container">
         <!-- Header -->
         <header class="header">
             <h1>⚙️ Admin Panel</h1>
             <p>Kingdom 3584 • Data Management</p>
-            <a href="index.html" class="back-link">← Back to Dashboard</a>
+            <div style="display: flex; gap: 15px; align-items: center; justify-content: center; margin-top: 10px;">
+                <span id="admin-username-display" style="color: #10b981;"></span>
+                <a href="index.html" class="back-link">← Back to Dashboard</a>
+                <button id="logout-btn" class="back-link" style="background: none; border: 1px solid #ef4444; color: #ef4444; padding: 5px 15px; border-radius: 6px; cursor: pointer;">🚪 Logout</button>
+            </div>
         </header>
 
         <!-- Season Management -->

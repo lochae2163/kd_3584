@@ -18,16 +18,22 @@ class Settings(BaseSettings):
     # Admin
     admin_username: str = "admin"
     admin_password: str = "admin123"
-    
+    admin_email: str = "your-email@example.com"
+
+    # SendGrid (for password reset emails)
+    sendgrid_api_key: str = ""
+    sendgrid_from_email: str = "noreply@kd3584tracker.com"
+
     # Database
     mongodb_url: str = ""
     database_name: str = "kvk_tracker"
-    
+
     # CORS
     cors_origins: List[str] = ["*"]
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields from .env
 
 settings = Settings()

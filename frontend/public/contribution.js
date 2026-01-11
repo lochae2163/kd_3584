@@ -246,7 +246,7 @@ function displayLeaderboard() {
                             </td>
                             <td class="player-col">
                                 <div class="player-info">
-                                    <a href="player.html?id=${contribution.governor_id}" class="player-name-link">
+                                    <a href="player-details.html?id=${contribution.governor_id}" class="player-name-link">
                                         ${contribution.governor_name}
                                     </a>
                                     <span class="player-id">${contribution.governor_id}</span>
@@ -255,13 +255,11 @@ function displayLeaderboard() {
                             <td class="score-col">
                                 <div class="score-breakdown">
                                     <span class="score-value">${formatNumber(contribution.t4_kills_gained || 0)}</span>
-                                    <span class="score-detail">(${formatNumber(contribution.t4_kill_score)} DKP)</span>
                                 </div>
                             </td>
                             <td class="score-col">
                                 <div class="score-breakdown">
                                     <span class="score-value">${formatNumber(contribution.t5_kills_gained || 0)}</span>
-                                    <span class="score-detail">(${formatNumber(contribution.t5_kill_score)} DKP)</span>
                                 </div>
                             </td>
                             <td class="score-col">

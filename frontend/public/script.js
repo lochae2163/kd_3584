@@ -345,7 +345,7 @@ function renderLeaderboard(players) {
         }).join('');
 
         return `
-            <tr class="player-row ${rowClass}" onclick="window.location.href='player.html?id=${player.governor_id}'">
+            <tr class="player-row ${rowClass}" onclick="window.location.href='player-details.html?id=${player.governor_id}'">
                 <td class="rank-col">
                     <div class="rank-display ${rowClass}">
                         ${rankDisplay}

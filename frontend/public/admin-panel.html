@@ -15,7 +15,7 @@
 
         if (!adminToken) {
             // No token, redirect to login
-            window.location.href = 'login.html';
+            window.location.href = 'admin-login.html';
         }
 
         // TODO: Optionally verify token with backend
@@ -29,7 +29,7 @@
             <p>Kingdom 3584 • Data Management</p>
             <div style="display: flex; gap: 15px; align-items: center; justify-content: center; margin-top: 10px;">
                 <span id="admin-username-display" style="color: #10b981;"></span>
-                <a href="index.html" class="back-link">← Back to Dashboard</a>
+                <a href="dashboard.html" class="back-link">← Back to Dashboard</a>
                 <button id="logout-btn" class="back-link" style="background: none; border: 1px solid #ef4444; color: #ef4444; padding: 5px 15px; border-radius: 6px; cursor: pointer;">🚪 Logout</button>
             </div>
         </header>

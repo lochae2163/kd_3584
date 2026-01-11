@@ -22,7 +22,7 @@ function handleAuthError(response) {
         // Token invalid or expired, redirect to login
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_username');
-        window.location.href = 'login.html';
+        window.location.href = 'admin-login.html';
         return true;
     }
     return false;
@@ -1524,7 +1524,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('admin_token');
             localStorage.removeItem('admin_username');
-            window.location.href = 'login.html';
+            window.location.href = 'admin-login.html';
         });
     }
 

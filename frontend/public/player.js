@@ -14,7 +14,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const governorId = urlParams.get('id');
 
 if (!governorId) {
-    window.location.href = 'index.html';
+    window.location.href = 'dashboard.html';
 }
 
 // ========================================
@@ -88,7 +88,7 @@ async function loadPlayerData() {
             <div class="error-message">
                 <h3>❌ Player Not Found</h3>
                 <p>Could not find player with ID: ${governorId}</p>
-                <a href="index.html" class="back-btn">← Back to Leaderboard</a>
+                <a href="dashboard.html" class="back-btn">← Back to Leaderboard</a>
             </div>
         `;
     }

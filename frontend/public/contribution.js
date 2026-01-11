@@ -223,8 +223,8 @@ function displayLeaderboard() {
                 <tr>
                     <th class="rank-col">Rank</th>
                     <th class="player-col">Player</th>
-                    <th class="score-col">T4 Kills</th>
-                    <th class="score-col">T5 Kills</th>
+                    <th class="score-col">T4 Kills Gained</th>
+                    <th class="score-col">T5 Kills Gained</th>
                     <th class="score-col">T4 Deaths</th>
                     <th class="score-col">T5 Deaths</th>
                     <th class="total-col">Total DKP</th>
@@ -254,12 +254,14 @@ function displayLeaderboard() {
                             </td>
                             <td class="score-col">
                                 <div class="score-breakdown">
-                                    <span class="score-value">${formatNumber(contribution.t4_kill_score)}</span>
+                                    <span class="score-value">${formatNumber(contribution.t4_kills_gained || 0)}</span>
+                                    <span class="score-detail">(${formatNumber(contribution.t4_kill_score)} DKP)</span>
                                 </div>
                             </td>
                             <td class="score-col">
                                 <div class="score-breakdown">
-                                    <span class="score-value">${formatNumber(contribution.t5_kill_score)}</span>
+                                    <span class="score-value">${formatNumber(contribution.t5_kills_gained || 0)}</span>
+                                    <span class="score-detail">(${formatNumber(contribution.t5_kill_score)} DKP)</span>
                                 </div>
                             </td>
                             <td class="score-col">

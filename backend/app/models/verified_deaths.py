@@ -44,6 +44,10 @@ class ContributionScore(BaseModel):
     governor_name: str
     rank: int = Field(default=0, description="Rank by contribution score")
 
+    # Raw kill counts (gained/delta, not total)
+    t4_kills_gained: int = Field(default=0, description="T4 kills gained during KvK")
+    t5_kills_gained: int = Field(default=0, description="T5 kills gained during KvK")
+
     # Kill scores
     t4_kill_score: int = Field(default=0, description="T4 kills × 1")
     t5_kill_score: int = Field(default=0, description="T5 kills × 2")

@@ -195,9 +195,9 @@ async def get_contribution_scores(
     """
     Get contribution scores for all players.
 
-    DKP Formula:
-    - T4 kills × 1
-    - T5 kills × 2
+    DKP Formula (based on GAINED/DELTA kills, not total):
+    - T4 kills gained × 1
+    - T5 kills gained × 2
     - T4 deaths × 4 (only when verified data exists)
     - T5 deaths × 8 (only when verified data exists)
 

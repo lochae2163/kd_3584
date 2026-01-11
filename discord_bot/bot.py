@@ -815,10 +815,10 @@ class KvKBot(commands.Cog):
         embed.add_field(
             name="💎 **/dkp [limit]** ✨ NEW!",
             value="View DKP contribution leaderboard:\n"
-                  "• 💀 **Verified deaths** - T4/T5 breakdown\n"
-                  "• 💎 **DKP scoring** - T5 = 3 DKP, T4 = 1 DKP\n"
-                  "• 🏆 **Top contributors** - Who's sacrificing most\n"
-                  "• 📊 **Real death data** - No estimates\n\n"
+                  "• ⚔️ **Kills gained** - T4/T5 gained during KvK\n"
+                  "• 💎 **DKP scoring** - T5 kills × 2 DKP, T4 kills × 1 DKP\n"
+                  "• 🏆 **Top contributors** - Who's killing most\n"
+                  "• 📊 **Delta/gained kills only** - Not total kills\n\n"
                   "**Limit:** 1-25 players (default: 10)\n\n"
                   "**Example:** `/dkp 15`\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
@@ -1125,9 +1125,9 @@ class KvKBot(commands.Cog):
                     return
 
                 data = await response.json()
-                leaderboard = data.get('leaderboard', [])
+                contributions = data.get('contributions', [])
 
-                if not leaderboard:
+                if not contributions:
                     await interaction.followup.send(
                         "❌ No DKP contribution data available for current season.",
                         ephemeral=True
@@ -1137,18 +1137,18 @@ class KvKBot(commands.Cog):
                 # Create embed
                 embed = discord.Embed(
                     title=f"🏆 Top {limit} DKP Contributors",
-                    description=f"**Verified T4/T5 Deaths**\nKingdom 3584 • Season {self.get_season_id()}\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    description=f"**T4/T5 Kills Gained During KvK**\nKingdom 3584 • Season {self.get_season_id()}\n━━━━━━━━━━━━━━━━━━━━━━━━",
                     color=discord.Color.red(),
                     timestamp=datetime.utcnow()
                 )
 
                 # Add players to embed
                 leaderboard_text = ""
-                for i, player in enumerate(leaderboard[:limit], 1):
-                    contribution = player.get('contribution', {})
-                    dkp_score = contribution.get('dkp_score', 0)
-                    t5_deaths = contribution.get('t5_deaths', 0)
-                    t4_deaths = contribution.get('t4_deaths', 0)
+                for i, contribution in enumerate(contributions[:limit], 1):
+                    dkp_score = contribution.get('total_contribution_score', 0)
+                    t5_kills_gained = contribution.get('t5_kills_gained', 0)
+                    t4_kills_gained = contribution.get('t4_kills_gained', 0)
+                    governor_name = contribution.get('governor_name', 'Unknown')
 
                     # Rank emoji
                     if i == 1:
@@ -1160,11 +1160,11 @@ class KvKBot(commands.Cog):
                     else:
                         rank_emoji = f"**{i}**"
 
-                    leaderboard_text += f"{rank_emoji} **{player['governor_name']}**\n"
+                    leaderboard_text += f"{rank_emoji} **{governor_name}**\n"
                     leaderboard_text += f"💎 DKP: `{self.format_number(dkp_score)}`"
 
-                    if t5_deaths > 0 or t4_deaths > 0:
-                        leaderboard_text += f" (T5: {self.format_number(t5_deaths)}, T4: {self.format_number(t4_deaths)})\n\n"
+                    if t5_kills_gained > 0 or t4_kills_gained > 0:
+                        leaderboard_text += f" (T5: {self.format_number(t5_kills_gained)}, T4: {self.format_number(t4_kills_gained)})\n\n"
                     else:
                         leaderboard_text += "\n\n"
 
@@ -1177,11 +1177,11 @@ class KvKBot(commands.Cog):
                 # Add legend
                 embed.add_field(
                     name="📊 DKP Calculation",
-                    value="• T5 Death = 3 DKP\n• T4 Death = 1 DKP\n• Shows verified deaths only",
+                    value="• T5 Kills Gained × 2 DKP\n• T4 Kills Gained × 1 DKP\n• Shows kills gained during KvK only",
                     inline=False
                 )
 
-                embed.set_footer(text=f"Last updated: {data.get('last_updated', 'N/A')}")
+                embed.set_footer(text=f"Contribution scores based on gained kills")
                 await interaction.followup.send(embed=embed)
 
         except Exception as e:

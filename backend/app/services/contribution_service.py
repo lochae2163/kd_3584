@@ -2,10 +2,10 @@
 Contribution Scoring Service
 
 Calculates player contribution scores using DKP formula:
-- T4 kills × 1
-- T5 kills × 2
-- T4 deaths × 4
-- T5 deaths × 8
+- T4 kills gained × 1 (delta/gained during KvK, not total)
+- T5 kills gained × 2 (delta/gained during KvK, not total)
+- T4 deaths × 4 (verified deaths only)
+- T5 deaths × 8 (verified deaths only)
 """
 from app.database import Database
 from app.models.verified_deaths import ContributionScore, VerifiedDeathsData
@@ -40,13 +40,13 @@ class ContributionService:
         Returns:
             ContributionScore with all calculations
         """
-        stats = player.get('stats', {})
+        delta = player.get('delta', {})
         governor_id = player.get('governor_id', '')
         governor_name = player.get('governor_name', '')
 
-        # Kill scores (from auto-detected data)
-        t4_kills = stats.get('t4_kills', 0)
-        t5_kills = stats.get('t5_kills', 0)
+        # Kill scores (from gained/delta kills, not total kills)
+        t4_kills = delta.get('t4_kills', 0)
+        t5_kills = delta.get('t5_kills', 0)
 
         t4_kill_score = t4_kills * self.T4_KILL_WEIGHT
         t5_kill_score = t5_kills * self.T5_KILL_WEIGHT
@@ -78,6 +78,8 @@ class ContributionService:
         return ContributionScore(
             governor_id=governor_id,
             governor_name=governor_name,
+            t4_kills_gained=t4_kills,
+            t5_kills_gained=t5_kills,
             t4_kill_score=t4_kill_score,
             t5_kill_score=t5_kill_score,
             t4_death_score=t4_death_score,

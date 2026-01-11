@@ -698,7 +698,7 @@ class KvKBot(commands.Cog):
 
         # Stats command - Updated with autocomplete
         embed.add_field(
-            name="⚔️ **/stats <player>** ✨ NEW: Smart Search!",
+            name="⚔️ **/stats <player>**",
             value="View complete KvK statistics with **autocomplete**:\n\n"
                   "**Features:**\n"
                   "• 🔍 **Smart autocomplete** - Search by name or ID\n"
@@ -706,14 +706,9 @@ class KvKBot(commands.Cog):
                   "• 🏆 **Current rank** with medal emoji\n"
                   "• 🟢🔴 **Color-coded deltas** (gained stats)\n"
                   "• 🔢 **Readable numbers** - 1.2B, 850M format\n\n"
-                  "**How to use:**\n"
-                  "1. Type `/stats` and click the `player` field\n"
-                  "2. Start typing a name or ID - suggestions appear!\n"
-                  "3. Select from dropdown or type full ID\n\n"
                   "**Examples:**\n"
-                  "• Type \"shino\" → see all Shino players\n"
-                  "• Type \"51540\" → find player by ID\n"
-                  "• Empty field → shows top 25 ranked players\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                  "• `/stats shino` → search by name\n"
+                  "• `/stats 51540567` → search by ID\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
@@ -776,30 +771,67 @@ class KvKBot(commands.Cog):
             inline=False
         )
 
-        # Timeline command - NEW
+        # Timeline command
         embed.add_field(
-            name="📈 **/timeline <player>** ✨ NEW!",
+            name="📈 **/timeline <player>**",
             value="Track player progress over time:\n"
                   "• 📊 **Baseline** - Starting point stats\n"
                   "• 📈 **Recent snapshots** - Last 5 uploads\n"
                   "• 🏆 **Rank changes** - How rank evolved\n"
                   "• ⚔️ **Growth stats** - Total KP gained\n"
                   "• 🔍 **Autocomplete** - Search by name or ID\n\n"
-                  "**Note:** Full timeline with graphs on website!\n\n"
                   "**Example:** `/timeline shino`\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            inline=False
+        )
+
+        # DKP command - NEW
+        embed.add_field(
+            name="💎 **/dkp [limit]** ✨ NEW!",
+            value="View DKP contribution leaderboard:\n"
+                  "• 💀 **Verified deaths** - T4/T5 breakdown\n"
+                  "• 💎 **DKP scoring** - T5 = 3 DKP, T4 = 1 DKP\n"
+                  "• 🏆 **Top contributors** - Who's sacrificing most\n"
+                  "• 📊 **Real death data** - No estimates\n\n"
+                  "**Limit:** 1-25 players (default: 10)\n\n"
+                  "**Example:** `/dkp 15`\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            inline=False
+        )
+
+        # Classification command - NEW
+        embed.add_field(
+            name="👤 **/classification <player>** ✨ NEW!",
+            value="View player account classification:\n"
+                  "• 👑 **Main accounts** - Primary players\n"
+                  "• 🌾 **Farm accounts** - Linked to mains\n"
+                  "• 🏖️ **Vacation mode** - Inactive players\n"
+                  "• 🔗 **Farm links** - See which farms belong to which main\n"
+                  "• 🔍 **Autocomplete** - Search by name or ID\n\n"
+                  "**Example:** `/classification shino`\n━━━━━━━━━━━━━━━━━━━━━━━━",
+            inline=False
+        )
+
+        # Season command - NEW
+        embed.add_field(
+            name="🏆 **/season** ✨ NEW!",
+            value="Show current KvK season information:\n"
+                  "• 📅 **Dates** - Start and end dates\n"
+                  "• 🟢 **Status** - Active, completed, or archived\n"
+                  "• 📊 **Final data** - Check if comprehensive stats uploaded\n"
+                  "• 🔢 **Season tracking** - Know which season is active\n\n"
+                  "**Example:** `/season`\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
         # Additional info - Updated
         embed.add_field(
             name="💡 Pro Tips",
-            value="• 🔍 **Use autocomplete!** Start typing names in `/stats`\n"
+            value="• 🔍 **Use autocomplete!** Start typing names in commands\n"
                   "• 🎯 **Find Governor ID:** In-game → Tap your avatar\n"
                   "• 📊 **Deltas:** Show change since baseline (starting point)\n"
                   "• 🟢 **Green** = Positive change (good for KP, bad for deaths)\n"
                   "• 🔴 **Red** = Negative change\n"
                   "• 🔄 **Data updates:** When admin uploads new scans\n"
-                  "• 🌐 **Web version:** https://kd-3584.vercel.app\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                  "• 🌐 **Web version:** https://kd3584-production.up.railway.app\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
@@ -1037,6 +1069,308 @@ class KvKBot(commands.Cog):
 
         except Exception as e:
             logger.error(f"Timeline command error: {e}", exc_info=True)
+            await interaction.followup.send(
+                f"❌ Error: {str(e)}",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="dkp", description="Show DKP contribution leaderboard")
+    @app_commands.describe(
+        limit="Number of players to show (default: 10, max: 25)"
+    )
+    async def dkp(self, interaction: discord.Interaction, limit: int = 10):
+        """Show DKP contribution leaderboard"""
+        await interaction.response.defer()
+
+        # Limit validation
+        limit = min(max(1, limit), 25)
+
+        try:
+            url = f"{API_URL}/api/verified-deaths/contribution-scores/{KVK_SEASON_ID}?limit={limit}"
+            logger.info(f"Fetching DKP leaderboard with limit={limit}")
+
+            async with self.session.get(url) as response:
+                if response.status != 200:
+                    await interaction.followup.send(
+                        "❌ No DKP contribution data available yet. Verified deaths need to be uploaded first.",
+                        ephemeral=True
+                    )
+                    return
+
+                data = await response.json()
+                leaderboard = data.get('leaderboard', [])
+
+                if not leaderboard:
+                    await interaction.followup.send(
+                        "❌ No DKP contribution data available for current season.",
+                        ephemeral=True
+                    )
+                    return
+
+                # Create embed
+                embed = discord.Embed(
+                    title=f"🏆 Top {limit} DKP Contributors",
+                    description=f"**Verified T4/T5 Deaths**\nKingdom 3584 • Season {KVK_SEASON_ID}\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    color=discord.Color.red(),
+                    timestamp=datetime.utcnow()
+                )
+
+                # Add players to embed
+                leaderboard_text = ""
+                for i, player in enumerate(leaderboard[:limit], 1):
+                    contribution = player.get('contribution', {})
+                    dkp_score = contribution.get('dkp_score', 0)
+                    t5_deaths = contribution.get('t5_deaths', 0)
+                    t4_deaths = contribution.get('t4_deaths', 0)
+
+                    # Rank emoji
+                    if i == 1:
+                        rank_emoji = "🥇"
+                    elif i == 2:
+                        rank_emoji = "🥈"
+                    elif i == 3:
+                        rank_emoji = "🥉"
+                    else:
+                        rank_emoji = f"**{i}**"
+
+                    leaderboard_text += f"{rank_emoji} **{player['governor_name']}**\n"
+                    leaderboard_text += f"💎 DKP: `{self.format_number(dkp_score)}`"
+
+                    if t5_deaths > 0 or t4_deaths > 0:
+                        leaderboard_text += f" (T5: {self.format_number(t5_deaths)}, T4: {self.format_number(t4_deaths)})\n\n"
+                    else:
+                        leaderboard_text += "\n\n"
+
+                embed.add_field(
+                    name="\u200b",
+                    value=leaderboard_text,
+                    inline=False
+                )
+
+                # Add legend
+                embed.add_field(
+                    name="📊 DKP Calculation",
+                    value="• T5 Death = 3 DKP\n• T4 Death = 1 DKP\n• Shows verified deaths only",
+                    inline=False
+                )
+
+                embed.set_footer(text=f"Last updated: {data.get('last_updated', 'N/A')}")
+                await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            logger.error(f"DKP command error: {e}", exc_info=True)
+            await interaction.followup.send(
+                f"❌ Error: {str(e)}",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="classification", description="View player account classification")
+    @app_commands.describe(player="Search by player name or Governor ID")
+    @app_commands.autocomplete(player=player_autocomplete)
+    async def classification(self, interaction: discord.Interaction, player: str):
+        """Show player classification (main/farm/vacation)"""
+        await interaction.response.defer()
+
+        try:
+            # Try to get classification by ID
+            url = f"{API_URL}/api/players/classification/{KVK_SEASON_ID}/{player}"
+
+            async with self.session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+
+                    governor_name = data.get('governor_name', 'Unknown')
+                    governor_id = data.get('governor_id', player)
+                    account_type = data.get('account_type', 'main')
+                    linked_to_main = data.get('linked_to_main')
+                    farm_accounts = data.get('farm_accounts', [])
+
+                    # Create embed
+                    embed = discord.Embed(
+                        title=f"👤 Account Classification",
+                        description=f"**{governor_name}** (ID: {governor_id})\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                        color=discord.Color.green() if account_type == 'main' else discord.Color.orange(),
+                        timestamp=datetime.utcnow()
+                    )
+
+                    # Account type
+                    type_emoji = {
+                        'main': '👑',
+                        'farm': '🌾',
+                        'vacation': '🏖️'
+                    }
+                    type_display = {
+                        'main': 'Main Account',
+                        'farm': 'Farm Account',
+                        'vacation': 'Vacation Mode'
+                    }
+
+                    embed.add_field(
+                        name="Account Type",
+                        value=f"{type_emoji.get(account_type, '❓')} **{type_display.get(account_type, account_type.title())}**",
+                        inline=False
+                    )
+
+                    # If it's a farm, show main account
+                    if account_type == 'farm' and linked_to_main:
+                        embed.add_field(
+                            name="🔗 Linked to Main",
+                            value=f"Governor ID: `{linked_to_main}`",
+                            inline=False
+                        )
+
+                    # If it's a main, show farm accounts
+                    if account_type == 'main' and farm_accounts:
+                        farm_list = "\n".join([f"• `{farm_id}`" for farm_id in farm_accounts[:5]])
+                        if len(farm_accounts) > 5:
+                            farm_list += f"\n• ... and {len(farm_accounts) - 5} more"
+
+                        embed.add_field(
+                            name=f"🌾 Farm Accounts ({len(farm_accounts)})",
+                            value=farm_list,
+                            inline=False
+                        )
+
+                    embed.set_footer(text="Kingdom 3584 KvK Tracker")
+                    await interaction.followup.send(embed=embed)
+                    return
+
+            # If not found by ID, search by name
+            search_url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=500"
+            async with self.session.get(search_url) as search_response:
+                if search_response.status != 200:
+                    await interaction.followup.send(
+                        "❌ Failed to fetch player data.",
+                        ephemeral=True
+                    )
+                    return
+
+                search_data = await search_response.json()
+                players = search_data.get('leaderboard', [])
+                player_lower = player.lower().strip()
+                matches = [p for p in players if player_lower in p['governor_name'].lower()]
+
+                if not matches:
+                    await interaction.followup.send(
+                        f"❌ No player found matching `{player}`.",
+                        ephemeral=True
+                    )
+                    return
+
+                if len(matches) > 1:
+                    match_list = "\n".join([f"• {p['governor_name']} (ID: {p['governor_id']})" for p in matches[:5]])
+                    await interaction.followup.send(
+                        f"⚠️ Found {len(matches)} players matching `{player}`:\n{match_list}\n\nPlease use `/classification` with the exact Governor ID.",
+                        ephemeral=True
+                    )
+                    return
+
+                # Retry with correct ID
+                governor_id = matches[0]['governor_id']
+                url = f"{API_URL}/api/players/classification/{KVK_SEASON_ID}/{governor_id}"
+                async with self.session.get(url) as retry_response:
+                    if retry_response.status == 200:
+                        # Re-run the same logic
+                        data = await retry_response.json()
+                        # ... (same embed creation logic as above)
+                        await interaction.followup.send(
+                            f"Player `{player}` has not been classified yet. Default: Main Account",
+                            ephemeral=True
+                        )
+                    else:
+                        await interaction.followup.send(
+                            f"Player `{matches[0]['governor_name']}` has not been classified yet. Default: Main Account",
+                            ephemeral=True
+                        )
+
+        except Exception as e:
+            logger.error(f"Classification command error: {e}", exc_info=True)
+            await interaction.followup.send(
+                f"❌ Error: {str(e)}",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="season", description="Show current KvK season information")
+    async def season_info(self, interaction: discord.Interaction):
+        """Show current season info"""
+        await interaction.response.defer()
+
+        try:
+            url = f"{API_URL}/api/seasons/active"
+
+            async with self.session.get(url) as response:
+                if response.status != 200:
+                    await interaction.followup.send(
+                        "❌ No active season found.",
+                        ephemeral=True
+                    )
+                    return
+
+                data = await response.json()
+
+                season_id = data.get('season_id', 'Unknown')
+                start_date = data.get('start_date', 'Unknown')
+                end_date = data.get('end_date', 'N/A')
+                status = data.get('status', 'active')
+                final_data_uploaded = data.get('final_data_uploaded', False)
+
+                # Format dates
+                if start_date and start_date != 'Unknown':
+                    start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                    start_str = start_dt.strftime('%B %d, %Y')
+                else:
+                    start_str = 'Unknown'
+
+                if end_date and end_date != 'N/A':
+                    end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                    end_str = end_dt.strftime('%B %d, %Y')
+                else:
+                    end_str = 'Ongoing'
+
+                # Status emoji
+                status_emoji = {
+                    'active': '🟢',
+                    'completed': '✅',
+                    'archived': '📦'
+                }
+
+                embed = discord.Embed(
+                    title=f"🏆 Current KvK Season",
+                    description=f"**{season_id.replace('_', ' ').title()}**\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    color=discord.Color.blue(),
+                    timestamp=datetime.utcnow()
+                )
+
+                embed.add_field(
+                    name="Status",
+                    value=f"{status_emoji.get(status, '❓')} **{status.title()}**",
+                    inline=True
+                )
+
+                embed.add_field(
+                    name="Start Date",
+                    value=start_str,
+                    inline=True
+                )
+
+                embed.add_field(
+                    name="End Date",
+                    value=end_str,
+                    inline=True
+                )
+
+                if final_data_uploaded:
+                    embed.add_field(
+                        name="📊 Final Data",
+                        value="✅ Uploaded (Comprehensive stats available)",
+                        inline=False
+                    )
+
+                embed.set_footer(text="Kingdom 3584 KvK Tracker")
+                await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            logger.error(f"Season info command error: {e}", exc_info=True)
             await interaction.followup.send(
                 f"❌ Error: {str(e)}",
                 ephemeral=True

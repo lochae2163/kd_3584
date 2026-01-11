@@ -7,35 +7,16 @@ from app.services.auth_service import get_current_admin
 from app.models.season import CreateSeasonRequest, ActivateSeasonRequest, ArchiveSeasonRequest
 from typing import List, Dict
 
-router = APIRouter(prefix="/admin/seasons", tags=["Season Management"])
+# Admin-only season management routes
+admin_router = APIRouter(prefix="/admin/seasons", tags=["Season Management"])
+
+# Public season info routes
+public_router = APIRouter(prefix="/api/seasons", tags=["Seasons"])
 
 
-@router.post("/create")
-async def create_season(
-    request: CreateSeasonRequest,
-    current_admin: str = Depends(get_current_admin)
-):
-    """
-    Create a new KvK season
+# ============== PUBLIC ROUTES (No Auth Required) ==============
 
-    - Auto-generates season_id (season_1, season_2, etc.)
-    - Sets status to 'preparing'
-    - Does NOT activate automatically
-    """
-    result = await season_service.create_season(
-        season_name=request.season_name,
-        description=request.description,
-        start_date=request.start_date,
-        kingdom_id=request.kingdom_id
-    )
-
-    if not result.get('success'):
-        raise HTTPException(status_code=400, detail=result.get('error'))
-
-    return result
-
-
-@router.get("/active")
+@public_router.get("/active")
 async def get_active_season():
     """
     Get the currently active season
@@ -49,11 +30,15 @@ async def get_active_season():
 
     return {
         "success": True,
-        "season": active_season
+        "season_id": active_season.get('season_id'),
+        "season_name": active_season.get('season_name'),
+        "status": active_season.get('status'),
+        "start_date": active_season.get('start_date'),
+        "final_data_uploaded": active_season.get('final_data_uploaded', False)
     }
 
 
-@router.get("/all")
+@public_router.get("/all")
 async def get_all_seasons():
     """
     Get all seasons, sorted by newest first
@@ -69,7 +54,7 @@ async def get_all_seasons():
     }
 
 
-@router.get("/{season_id}")
+@public_router.get("/{season_id}")
 async def get_season(season_id: str):
     """
     Get a specific season by ID
@@ -87,54 +72,7 @@ async def get_season(season_id: str):
     }
 
 
-@router.post("/activate")
-async def activate_season(
-    request: ActivateSeasonRequest,
-    current_admin: str = Depends(get_current_admin)
-):
-    """
-    Activate a season
-
-    - Deactivates all other seasons
-    - Sets this season as active
-    - All future uploads will go to this season
-    """
-    result = await season_service.activate_season(request.season_id)
-
-    if not result.get('success'):
-        raise HTTPException(status_code=400, detail=result.get('error'))
-
-    return result
-
-
-@router.post("/archive")
-async def archive_season(
-    request: ArchiveSeasonRequest,
-    current_admin: str = Depends(get_current_admin)
-):
-    """
-    Archive a season (mark as read-only)
-
-    - Season becomes locked for editing
-    - Cannot upload new data
-    - Can still view historical data
-    - Requires confirmation
-    """
-    if not request.confirm:
-        raise HTTPException(
-            status_code=400,
-            detail="Confirmation required to archive season"
-        )
-
-    result = await season_service.archive_season(request.season_id)
-
-    if not result.get('success'):
-        raise HTTPException(status_code=400, detail=result.get('error'))
-
-    return result
-
-
-@router.get("/{season_id}/stats")
+@public_router.get("/{season_id}/stats")
 async def get_season_stats(season_id: str):
     """
     Get season statistics
@@ -166,7 +104,81 @@ async def get_season_stats(season_id: str):
     }
 
 
-@router.post("/{season_id}/mark-final-uploaded")
+# ============== ADMIN ROUTES (Auth Required) ==============
+
+@admin_router.post("/create")
+async def create_season(
+    request: CreateSeasonRequest,
+    current_admin: str = Depends(get_current_admin)
+):
+    """
+    Create a new KvK season
+
+    - Auto-generates season_id (season_1, season_2, etc.)
+    - Sets status to 'preparing'
+    - Does NOT activate automatically
+    """
+    result = await season_service.create_season(
+        season_name=request.season_name,
+        description=request.description,
+        start_date=request.start_date,
+        kingdom_id=request.kingdom_id
+    )
+
+    if not result.get('success'):
+        raise HTTPException(status_code=400, detail=result.get('error'))
+
+    return result
+
+
+@admin_router.post("/activate")
+async def activate_season(
+    request: ActivateSeasonRequest,
+    current_admin: str = Depends(get_current_admin)
+):
+    """
+    Activate a season
+
+    - Deactivates all other seasons
+    - Sets this season as active
+    - All future uploads will go to this season
+    """
+    result = await season_service.activate_season(request.season_id)
+
+    if not result.get('success'):
+        raise HTTPException(status_code=400, detail=result.get('error'))
+
+    return result
+
+
+@admin_router.post("/archive")
+async def archive_season(
+    request: ArchiveSeasonRequest,
+    current_admin: str = Depends(get_current_admin)
+):
+    """
+    Archive a season (mark as read-only)
+
+    - Season becomes locked for editing
+    - Cannot upload new data
+    - Can still view historical data
+    - Requires confirmation
+    """
+    if not request.confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="Confirmation required to archive season"
+        )
+
+    result = await season_service.archive_season(request.season_id)
+
+    if not result.get('success'):
+        raise HTTPException(status_code=400, detail=result.get('error'))
+
+    return result
+
+
+@admin_router.post("/{season_id}/mark-final-uploaded")
 async def mark_final_data_uploaded(
     season_id: str,
     current_admin: str = Depends(get_current_admin)

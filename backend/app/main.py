@@ -11,7 +11,7 @@ from app.services.data_processor import DataProcessor
 from app.routes.auth import router as auth_router
 from app.routes.upload import router as upload_router
 from app.routes.players import router as players_router
-from app.routes.seasons import router as seasons_router
+from app.routes.seasons import admin_router as seasons_admin_router, public_router as seasons_public_router
 from app.routes.player_classification import router as player_classification_router
 from app.routes.verified_deaths import router as verified_deaths_router
 from app.routes.final_kvk import router as final_kvk_router
@@ -58,7 +58,9 @@ app.include_router(upload_router)
 
 app.include_router(players_router)
 
-app.include_router(seasons_router)
+# Season routes - both public and admin
+app.include_router(seasons_public_router)
+app.include_router(seasons_admin_router)
 
 app.include_router(player_classification_router)
 

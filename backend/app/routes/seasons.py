@@ -196,3 +196,26 @@ async def mark_final_data_uploaded(
         raise HTTPException(status_code=400, detail=result.get('error'))
 
     return result
+
+
+@admin_router.post("/{season_id}/update-dates")
+async def update_season_dates(
+    season_id: str,
+    request: dict,
+    current_admin: str = Depends(get_current_admin)
+):
+    """
+    Update season start and end dates
+
+    - Allows manual editing of season dates
+    - Dates are used across all season data displays
+    """
+    start_date = request.get('start_date')
+    end_date = request.get('end_date')
+
+    result = await season_service.update_season_dates(season_id, start_date, end_date)
+
+    if not result.get('success'):
+        raise HTTPException(status_code=400, detail=result.get('error'))
+
+    return result

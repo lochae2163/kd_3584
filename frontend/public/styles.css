@@ -1841,6 +1841,79 @@ tbody tr:hover {
     color: #e2e8f0;
 }
 
+/* Season Date Editing Styles */
+.season-dates-edit {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #334155;
+}
+
+.date-edit-group {
+    margin: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.date-edit-group label {
+    font-size: 0.9rem;
+    color: #e2e8f0;
+}
+
+.date-edit-group input[type="date"] {
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.date-edit-group input[type="date"]:hover:not(:disabled) {
+    border-color: #3b82f6;
+}
+
+.date-edit-group input[type="date"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.date-edit-group input[type="date"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Date picker calendar styling (WebKit browsers) */
+.date-edit-group input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+    cursor: pointer;
+}
+
+/* Animation for notification */
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
 .season-actions {
     display: flex;
     gap: 10px;

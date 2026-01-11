@@ -601,6 +601,9 @@ async function loadSeasons() {
             const statusClass = isArchived ? 'archived' : isActive ? 'active' : season.status;
             const statusEmoji = isArchived ? '🔒' : isActive ? '✅' : season.status === 'preparing' ? '⏳' : '✓';
 
+            const startDateValue = season.start_date ? new Date(season.start_date).toISOString().split('T')[0] : '';
+            const endDateValue = season.end_date ? new Date(season.end_date).toISOString().split('T')[0] : '';
+
             html += `
                 <div class="season-card ${statusClass}">
                     <div class="season-header-card">
@@ -613,7 +616,21 @@ async function loadSeasons() {
                         <p><strong>Uploads:</strong> ${season.total_uploads}</p>
                         <p><strong>Baseline:</strong> ${season.has_baseline ? '✅' : '❌'}</p>
                         <p><strong>Current Data:</strong> ${season.has_current_data ? '✅' : '❌'}</p>
-                        ${season.start_date ? `<p><strong>Started:</strong> ${new Date(season.start_date).toLocaleDateString()}</p>` : ''}
+
+                        <div class="season-dates-edit">
+                            <div class="date-edit-group">
+                                <label><strong>📅 Start Date:</strong></label>
+                                <input type="date" id="start-date-${season.season_id}" value="${startDateValue}"
+                                    ${isArchived ? 'disabled' : ''}
+                                    onchange="updateSeasonDates('${season.season_id}')">
+                            </div>
+                            <div class="date-edit-group">
+                                <label><strong>🏁 End Date:</strong></label>
+                                <input type="date" id="end-date-${season.season_id}" value="${endDateValue}"
+                                    ${isArchived ? 'disabled' : ''}
+                                    onchange="updateSeasonDates('${season.season_id}')">
+                            </div>
+                        </div>
                     </div>
                     <div class="season-actions">
                         ${!isActive && !isArchived ? `
@@ -709,8 +726,11 @@ async function markFinalDataUploaded(seasonId) {
 
     try {
         const response = await fetch(`${API_URL}/admin/seasons/${seasonId}/mark-final-uploaded`, {
-            method: 'POST'
+            method: 'POST',
+            headers: getAuthHeaders()
         });
+
+        if (handleAuthError(response)) return;
 
         const result = await response.json();
 
@@ -722,6 +742,50 @@ async function markFinalDataUploaded(seasonId) {
         }
     } catch (error) {
         alert(`❌ Mark failed: ${error.message}`);
+    }
+}
+
+async function updateSeasonDates(seasonId) {
+    const startDateInput = document.getElementById(`start-date-${seasonId}`);
+    const endDateInput = document.getElementById(`end-date-${seasonId}`);
+
+    const startDate = startDateInput.value ? `${startDateInput.value}T00:00:00` : null;
+    const endDate = endDateInput.value ? `${endDateInput.value}T23:59:59` : null;
+
+    try {
+        const response = await fetch(`${API_URL}/admin/seasons/${seasonId}/update-dates`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+                start_date: startDate,
+                end_date: endDate
+            })
+        });
+
+        if (handleAuthError(response)) return;
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Show success notification (subtle, non-intrusive)
+            const notification = document.createElement('div');
+            notification.className = 'date-update-notification';
+            notification.textContent = `✅ Dates updated for ${seasonId}`;
+            notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 10000; animation: slideIn 0.3s ease;';
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+
+            // Reload seasons to show updated data
+            await loadSeasons();
+        } else {
+            throw new Error(result.error || 'Date update failed');
+        }
+    } catch (error) {
+        alert(`❌ Failed to update dates: ${error.message}`);
     }
 }
 

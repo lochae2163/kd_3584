@@ -361,6 +361,89 @@ class SeasonService:
                 "error": str(e)
             }
 
+    async def update_season_dates(self, season_id: str, start_date: Optional[str] = None,
+                                  end_date: Optional[str] = None) -> Dict:
+        """
+        Update season start and end dates
+
+        Args:
+            season_id: Season ID
+            start_date: ISO format date string (optional)
+            end_date: ISO format date string (optional)
+
+        Returns:
+            Dict with success status
+        """
+        try:
+            seasons_col = Database.get_collection("kvk_seasons")
+
+            # Verify season exists
+            season = await seasons_col.find_one({"season_id": season_id})
+            if not season:
+                return {
+                    "success": False,
+                    "error": f"Season {season_id} not found"
+                }
+
+            # Prepare update
+            update_fields = {}
+
+            if start_date is not None:
+                # Parse and validate date
+                if start_date:  # Non-empty string
+                    try:
+                        parsed_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                        update_fields["start_date"] = parsed_date
+                    except ValueError as e:
+                        return {
+                            "success": False,
+                            "error": f"Invalid start_date format: {e}"
+                        }
+                else:
+                    update_fields["start_date"] = None
+
+            if end_date is not None:
+                # Parse and validate date
+                if end_date:  # Non-empty string
+                    try:
+                        parsed_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                        update_fields["end_date"] = parsed_date
+                    except ValueError as e:
+                        return {
+                            "success": False,
+                            "error": f"Invalid end_date format: {e}"
+                        }
+                else:
+                    update_fields["end_date"] = None
+
+            if not update_fields:
+                return {
+                    "success": False,
+                    "error": "No dates provided to update"
+                }
+
+            # Update season
+            await seasons_col.update_one(
+                {"season_id": season_id},
+                {"$set": update_fields}
+            )
+
+            logger.info(f"Updated dates for season {season_id}: {update_fields}")
+
+            return {
+                "success": True,
+                "message": "Season dates updated successfully",
+                "updated_fields": {k: v.isoformat() if isinstance(v, datetime) else v
+                                  for k, v in update_fields.items()}
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to update season dates: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
 
 # Create singleton instance
 season_service = SeasonService()

@@ -566,16 +566,18 @@ async function loadSeasons() {
     const seasonManagement = document.getElementById('season-management');
 
     try {
+        // Use public API endpoints (no auth required for reading season info)
         const [allResponse, activeResponse] = await Promise.all([
-            fetch(`${API_URL}/admin/seasons/all`),
-            fetch(`${API_URL}/admin/seasons/active`)
+            fetch(`${API_URL}/api/seasons/all`),
+            fetch(`${API_URL}/api/seasons/active`)
         ]);
 
         const allData = await allResponse.json();
         const activeData = await activeResponse.json();
 
-        activeSeason = activeData.season;
-        const seasons = allData.seasons;
+        // Handle different response structures
+        activeSeason = activeData.season || activeData; // activeData might be the season itself
+        const seasons = allData.seasons || [];
 
         // Auto-populate season fields
         if (activeSeason) {
@@ -676,9 +678,11 @@ async function activateSeason(seasonId) {
     try {
         const response = await fetch(`${API_URL}/admin/seasons/activate`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ season_id: seasonId })
         });
+
+        if (handleAuthError(response)) return;
 
         const result = await response.json();
 
@@ -702,9 +706,11 @@ async function archiveSeason(seasonId) {
     try {
         const response = await fetch(`${API_URL}/admin/seasons/archive`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ season_id: seasonId, confirm: true })
         });
+
+        if (handleAuthError(response)) return;
 
         const result = await response.json();
 
@@ -791,7 +797,8 @@ async function updateSeasonDates(seasonId) {
 
 async function viewSeasonStats(seasonId) {
     try {
-        const response = await fetch(`${API_URL}/admin/seasons/${seasonId}/stats`);
+        // Use public API endpoint (no auth required)
+        const response = await fetch(`${API_URL}/api/seasons/${seasonId}/stats`);
         const result = await response.json();
 
         if (response.ok && result.success) {

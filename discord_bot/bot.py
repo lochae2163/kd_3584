@@ -18,8 +18,10 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 API_URL = os.getenv('API_URL', 'https://kd3584-production.up.railway.app')
-KVK_SEASON_ID = os.getenv('KVK_SEASON_ID', 'season_1')
 DISCORD_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+
+# Global variable for active season (will be fetched on startup)
+ACTIVE_SEASON_ID = None
 
 if not DISCORD_TOKEN:
     logger.error("❌ DISCORD_BOT_TOKEN not set in environment variables!")
@@ -44,10 +46,35 @@ class KvKBot(commands.Cog):
         timeout = aiohttp.ClientTimeout(total=10)
         self.session = aiohttp.ClientSession(timeout=timeout)
 
+        # Fetch active season on startup
+        await self.fetch_active_season()
+
     async def cog_unload(self):
         """Close aiohttp session"""
         if self.session:
             await self.session.close()
+
+    async def fetch_active_season(self):
+        """Fetch and cache the active season ID"""
+        global ACTIVE_SEASON_ID
+        try:
+            url = f"{API_URL}/api/seasons/active"
+            async with self.session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    ACTIVE_SEASON_ID = data.get('season_id', 'season_6')
+                    logger.info(f"✅ Active season set to: {ACTIVE_SEASON_ID}")
+                else:
+                    # Fallback to season_6 if API fails
+                    ACTIVE_SEASON_ID = 'season_6'
+                    logger.warning(f"⚠️ Failed to fetch active season, using fallback: {ACTIVE_SEASON_ID}")
+        except Exception as e:
+            ACTIVE_SEASON_ID = 'season_6'
+            logger.error(f"❌ Error fetching active season: {e}, using fallback: {ACTIVE_SEASON_ID}")
+
+    def get_season_id(self):
+        """Get the current active season ID"""
+        return ACTIVE_SEASON_ID or 'season_6'
 
     def format_number(self, num):
         """Format number: abbreviated (B/M) for millions+, full with commas for under 1M"""
@@ -269,7 +296,7 @@ class KvKBot(commands.Cog):
         """Autocomplete for player search - search by name or ID"""
         try:
             # Fetch all players from leaderboard (API max limit is 500)
-            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=500"
+            url = f"{API_URL}/api/leaderboard?kvk_season_id={self.get_season_id()}&limit=500"
 
             logger.info(f"Autocomplete triggered with input: '{current}'")
 
@@ -335,7 +362,7 @@ class KvKBot(commands.Cog):
 
         try:
             # First, try as governor_id
-            url = f"{API_URL}/api/player/{player}?kvk_season_id={KVK_SEASON_ID}"
+            url = f"{API_URL}/api/player/{player}?kvk_season_id={self.get_season_id()}"
 
             async with self.session.get(url) as response:
                 if response.status == 200:
@@ -347,7 +374,7 @@ class KvKBot(commands.Cog):
 
             # If not found by ID, try searching by name
             logger.info(f"Player '{player}' not found by ID, searching by name...")
-            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=500"
+            url = f"{API_URL}/api/leaderboard?kvk_season_id={self.get_season_id()}&limit=500"
 
             async with self.session.get(url) as response:
                 if response.status != 200:
@@ -418,7 +445,7 @@ class KvKBot(commands.Cog):
         limit = min(max(1, limit), 25)
 
         try:
-            url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&sort_by={sort_by}&limit={limit}"
+            url = f"{API_URL}/api/leaderboard?kvk_season_id={self.get_season_id()}&sort_by={sort_by}&limit={limit}"
             logger.info(f"Fetching leaderboard with sort_by={sort_by}, limit={limit}")
             logger.info(f"URL: {url}")
 
@@ -452,7 +479,7 @@ class KvKBot(commands.Cog):
 
                 embed = discord.Embed(
                     title=f"🏆 Top {limit} Players",
-                    description=f"**{sort_labels.get(sort_by, sort_by)}**\nKingdom 3584 • Season {KVK_SEASON_ID}\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    description=f"**{sort_labels.get(sort_by, sort_by)}**\nKingdom 3584 • Season {self.get_season_id()}\n━━━━━━━━━━━━━━━━━━━━━━━━",
                     color=discord.Color.gold(),
                     timestamp=datetime.utcnow()
                 )
@@ -512,7 +539,7 @@ class KvKBot(commands.Cog):
         await interaction.response.defer()
 
         try:
-            url = f"{API_URL}/api/stats/summary?kvk_season_id={KVK_SEASON_ID}"
+            url = f"{API_URL}/api/stats/summary?kvk_season_id={self.get_season_id()}"
 
             async with self.session.get(url) as response:
                 if response.status != 200:
@@ -530,7 +557,7 @@ class KvKBot(commands.Cog):
 
                 embed = discord.Embed(
                     title="📊 Kingdom 3584 Statistics",
-                    description=f"**Season {KVK_SEASON_ID}** • {data.get('player_count', 0)} Players\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    description=f"**Season {self.get_season_id()}** • {data.get('player_count', 0)} Players\n━━━━━━━━━━━━━━━━━━━━━━━━",
                     color=discord.Color.purple(),
                     timestamp=datetime.utcnow()
                 )
@@ -606,8 +633,8 @@ class KvKBot(commands.Cog):
 
         try:
             # Fetch both players
-            url1 = f"{API_URL}/api/player/{player1_id}?kvk_season_id={KVK_SEASON_ID}"
-            url2 = f"{API_URL}/api/player/{player2_id}?kvk_season_id={KVK_SEASON_ID}"
+            url1 = f"{API_URL}/api/player/{player1_id}?kvk_season_id={self.get_season_id()}"
+            url2 = f"{API_URL}/api/player/{player2_id}?kvk_season_id={self.get_season_id()}"
 
             async with self.session.get(url1) as response1:
                 if response1.status != 200:
@@ -857,7 +884,7 @@ class KvKBot(commands.Cog):
             # Limit to reasonable range (max 10 for Discord)
             limit = max(1, min(limit, 10))
 
-            url = f"{API_URL}/api/history?kvk_season_id={KVK_SEASON_ID}&limit={limit}"
+            url = f"{API_URL}/api/history?kvk_season_id={self.get_season_id()}&limit={limit}"
 
             async with self.session.get(url) as response:
                 if response.status != 200:
@@ -879,7 +906,7 @@ class KvKBot(commands.Cog):
 
                 embed = discord.Embed(
                     title=f"📜 Upload History",
-                    description=f"Recent {len(uploads)} uploads for Season {KVK_SEASON_ID}\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    description=f"Recent {len(uploads)} uploads for Season {self.get_season_id()}\n━━━━━━━━━━━━━━━━━━━━━━━━",
                     color=discord.Color.purple(),
                     timestamp=datetime.utcnow()
                 )
@@ -942,12 +969,12 @@ class KvKBot(commands.Cog):
 
         try:
             # First, try as governor_id
-            url = f"{API_URL}/api/player/{player}/timeline?kvk_season_id={KVK_SEASON_ID}"
+            url = f"{API_URL}/api/player/{player}/timeline?kvk_season_id={self.get_season_id()}"
 
             async with self.session.get(url) as response:
                 if response.status != 200:
                     # Try searching by name
-                    search_url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=500"
+                    search_url = f"{API_URL}/api/leaderboard?kvk_season_id={self.get_season_id()}&limit=500"
                     async with self.session.get(search_url) as search_response:
                         if search_response.status != 200:
                             await interaction.followup.send(
@@ -978,7 +1005,7 @@ class KvKBot(commands.Cog):
 
                         # Retry with correct ID
                         governor_id = matches[0]['governor_id']
-                        url = f"{API_URL}/api/player/{governor_id}/timeline?kvk_season_id={KVK_SEASON_ID}"
+                        url = f"{API_URL}/api/player/{governor_id}/timeline?kvk_season_id={self.get_season_id()}"
                         response = await self.session.get(url)
 
                 data = await response.json()
@@ -1004,7 +1031,7 @@ class KvKBot(commands.Cog):
 
                 embed = discord.Embed(
                     title=f"📈 Progress Timeline",
-                    description=f"**{governor_name}** (ID: {governor_id})\nSeason {KVK_SEASON_ID} • {len(timeline)} snapshots\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    description=f"**{governor_name}** (ID: {governor_id})\nSeason {self.get_season_id()} • {len(timeline)} snapshots\n━━━━━━━━━━━━━━━━━━━━━━━━",
                     color=discord.Color.blue(),
                     timestamp=datetime.utcnow()
                 )
@@ -1086,7 +1113,7 @@ class KvKBot(commands.Cog):
         limit = min(max(1, limit), 25)
 
         try:
-            url = f"{API_URL}/api/verified-deaths/contribution-scores/{KVK_SEASON_ID}?limit={limit}"
+            url = f"{API_URL}/api/verified-deaths/contribution-scores/{self.get_season_id()}?limit={limit}"
             logger.info(f"Fetching DKP leaderboard with limit={limit}")
 
             async with self.session.get(url) as response:
@@ -1110,7 +1137,7 @@ class KvKBot(commands.Cog):
                 # Create embed
                 embed = discord.Embed(
                     title=f"🏆 Top {limit} DKP Contributors",
-                    description=f"**Verified T4/T5 Deaths**\nKingdom 3584 • Season {KVK_SEASON_ID}\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                    description=f"**Verified T4/T5 Deaths**\nKingdom 3584 • Season {self.get_season_id()}\n━━━━━━━━━━━━━━━━━━━━━━━━",
                     color=discord.Color.red(),
                     timestamp=datetime.utcnow()
                 )
@@ -1173,7 +1200,7 @@ class KvKBot(commands.Cog):
 
         try:
             # Try to get classification by ID
-            url = f"{API_URL}/api/players/classification/{KVK_SEASON_ID}/{player}"
+            url = f"{API_URL}/api/players/classification/{self.get_season_id()}/{player}"
 
             async with self.session.get(url) as response:
                 if response.status == 200:
@@ -1236,7 +1263,7 @@ class KvKBot(commands.Cog):
                     return
 
             # If not found by ID, search by name
-            search_url = f"{API_URL}/api/leaderboard?kvk_season_id={KVK_SEASON_ID}&limit=500"
+            search_url = f"{API_URL}/api/leaderboard?kvk_season_id={self.get_season_id()}&limit=500"
             async with self.session.get(search_url) as search_response:
                 if search_response.status != 200:
                     await interaction.followup.send(
@@ -1267,7 +1294,7 @@ class KvKBot(commands.Cog):
 
                 # Retry with correct ID
                 governor_id = matches[0]['governor_id']
-                url = f"{API_URL}/api/players/classification/{KVK_SEASON_ID}/{governor_id}"
+                url = f"{API_URL}/api/players/classification/{self.get_season_id()}/{governor_id}"
                 async with self.session.get(url) as retry_response:
                     if retry_response.status == 200:
                         # Re-run the same logic

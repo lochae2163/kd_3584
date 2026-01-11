@@ -3,13 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting...</title>
+    <title>Kingdom 3584 - KvK Tracker</title>
     <script>
-        // Redirect to dashboard by default
-        window.location.href = 'dashboard.html';
+        // Configuration
+        const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:8000'
+            : 'https://kd3584-production.up.railway.app';
+
+        // Check active season status and redirect accordingly
+        async function redirectToMainPage() {
+            try {
+                const response = await fetch(`${API_URL}/api/seasons/active`);
+                const data = await response.json();
+
+                if (data.success && (data.season || data.season_id)) {
+                    const season = data.season || data;
+
+                    // If final data has been uploaded, show DKP leaderboard as main page
+                    if (season.final_data_uploaded || season.status === 'completed' || season.status === 'archived') {
+                        window.location.href = 'leaderboard.html';
+                    } else {
+                        // Otherwise show the regular dashboard
+                        window.location.href = 'dashboard.html';
+                    }
+                } else {
+                    // No active season, default to dashboard
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (error) {
+                console.error('Failed to check season status:', error);
+                // Fallback to dashboard on error
+                window.location.href = 'dashboard.html';
+            }
+        }
+
+        // Execute redirect on page load
+        redirectToMainPage();
     </script>
 </head>
 <body>
-    <p>Redirecting to dashboard...</p>
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+        <p>Loading Kingdom 3584 KvK Tracker...</p>
+    </div>
 </body>
 </html>

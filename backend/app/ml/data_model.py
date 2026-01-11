@@ -18,6 +18,7 @@ from datetime import datetime
 from io import StringIO, BytesIO
 from dataclasses import dataclass
 import logging
+import openpyxl
 
 logger = logging.getLogger(__name__)
 
@@ -269,20 +270,43 @@ class KvKDataModel:
 
         This method:
         1. Auto-detects the correct sheet (kingdom_id or "Rolled Up {kingdom_id}")
-        2. Maps Excel columns to required CSV format
-        3. Cleans and validates data
-        4. Returns processed player data
+        2. Extracts file date from Summary sheet
+        3. Maps Excel columns to required CSV format
+        4. Cleans and validates data
+        5. Returns processed player data with file date
 
         Args:
             excel_bytes: Raw Excel file bytes
             kingdom_id: Kingdom number to look for (default "3584")
 
         Returns:
-            Dict with processed data and metadata
+            Dict with processed data, metadata, and file_date
         """
         try:
             # Read Excel file
             excel_file = BytesIO(excel_bytes)
+
+            # Extract file date from Summary sheet (Row 2, Column F)
+            file_date = None
+            try:
+                wb = openpyxl.load_workbook(BytesIO(excel_bytes))
+                if 'Summary' in wb.sheetnames:
+                    ws = wb['Summary']
+                    date_cell = ws.cell(2, 6).value  # Row 2, Column F (6)
+                    if date_cell:
+                        # Parse date string like "2025-12-17 20:21 UTC"
+                        if isinstance(date_cell, str) and 'UTC' in date_cell:
+                            # Remove ' UTC' and parse
+                            date_str = date_cell.replace(' UTC', '').strip()
+                            file_date = datetime.strptime(date_str, '%Y-%m-%d %H:%M').isoformat()
+                            logger.info(f"Extracted file date from Summary sheet: {file_date}")
+                        elif isinstance(date_cell, datetime):
+                            file_date = date_cell.isoformat()
+                            logger.info(f"Extracted file date from Summary sheet: {file_date}")
+            except Exception as e:
+                logger.warning(f"Could not extract file date from Summary sheet: {e}")
+                # If we can't extract date, use upload time as fallback
+                file_date = None
 
             # Get all sheet names
             xls = pd.ExcelFile(excel_file)
@@ -395,7 +419,8 @@ class KvKDataModel:
                 "message": f"Successfully processed {len(players)} players from sheet '{target_sheet}'",
                 "player_count": len(players),
                 "players": players,
-                "processing_stats": self.processing_stats
+                "processing_stats": self.processing_stats,
+                "file_date": file_date  # Date from Excel file, not upload time
             }
 
         except Exception as e:

@@ -72,6 +72,7 @@ class MLService:
     ) -> Dict:
         """
         Process baseline Excel file and save to database.
+        Uses file date from Excel Summary sheet instead of upload time.
         """
         # Process through ML model
         result = self.model.process_excel(excel_bytes, kingdom_id)
@@ -79,12 +80,22 @@ class MLService:
         if not result['success']:
             return result
 
+        # Use file_date from Excel if available, otherwise use upload time
+        timestamp = result.get('file_date')
+        if timestamp:
+            # Convert ISO string back to datetime
+            timestamp = datetime.fromisoformat(timestamp)
+            logger.info(f"Using file date from Excel: {timestamp}")
+        else:
+            timestamp = datetime.utcnow()
+            logger.warning("File date not found in Excel, using upload time")
+
         # Create baseline document
         baseline_doc = {
             "type": "baseline",
             "kvk_season_id": kvk_season_id,
             "file_name": file_name,
-            "timestamp": datetime.utcnow(),
+            "timestamp": timestamp,  # Use file date from Excel
             "player_count": result['player_count'],
             "players": result['players'],
             "processing_stats": result['processing_stats']
@@ -227,6 +238,7 @@ class MLService:
         """
         Process current data Excel file, calculate deltas, save, and add to history.
         New players are automatically added to baseline with zero deltas.
+        Uses file date from Excel Summary sheet instead of upload time.
         """
         # Process through ML model
         result = self.model.process_excel(excel_bytes, kingdom_id)
@@ -281,7 +293,15 @@ class MLService:
         # Calculate summary (using players_with_deltas to include delta info)
         summary = self.model.calculate_summary_stats(players_with_deltas)
 
-        timestamp = datetime.utcnow()
+        # Use file_date from Excel if available, otherwise use upload time
+        timestamp = result.get('file_date')
+        if timestamp:
+            # Convert ISO string back to datetime
+            timestamp = datetime.fromisoformat(timestamp)
+            logger.info(f"Using file date from Excel: {timestamp}")
+        else:
+            timestamp = datetime.utcnow()
+            logger.warning("File date not found in Excel, using upload time")
 
         # Create current data document
         current_doc = {
@@ -289,7 +309,7 @@ class MLService:
             "kvk_season_id": kvk_season_id,
             "file_name": file_name,
             "description": description,
-            "timestamp": timestamp,
+            "timestamp": timestamp,  # Use file date from Excel
             "player_count": result['player_count'],
             "players": ranked_players,
             "summary": summary,

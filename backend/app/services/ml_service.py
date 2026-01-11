@@ -377,11 +377,17 @@ class MLService:
                         "t5_kills": 0
                     }
                 ranked = self.model.rank_players(players, sort_by)[:limit]
+
+                # Convert datetime to ISO string for JSON serialization
+                baseline_ts = baseline.get('timestamp')
+                if baseline_ts and hasattr(baseline_ts, 'isoformat'):
+                    baseline_ts = baseline_ts.isoformat()
+
                 return {
                     "success": True,
                     "kvk_season_id": kvk_season_id,
-                    "baseline_date": baseline.get('timestamp'),
-                    "current_date": baseline.get('timestamp'),
+                    "baseline_date": baseline_ts,
+                    "current_date": baseline_ts,
                     "is_baseline_only": True,
                     "player_count": len(ranked),
                     "leaderboard": ranked
@@ -395,11 +401,20 @@ class MLService:
         players = current.get('players', [])
         ranked = self.model.rank_players(players, sort_by)[:limit]
         
+        # Convert datetime objects to ISO strings for JSON serialization
+        baseline_date = baseline.get('timestamp') if baseline else None
+        if baseline_date and hasattr(baseline_date, 'isoformat'):
+            baseline_date = baseline_date.isoformat()
+
+        current_date = current.get('timestamp')
+        if current_date and hasattr(current_date, 'isoformat'):
+            current_date = current_date.isoformat()
+
         return {
             "success": True,
             "kvk_season_id": kvk_season_id,
-            "baseline_date": baseline.get('timestamp') if baseline else None,
-            "current_date": current.get('timestamp'),
+            "baseline_date": baseline_date,
+            "current_date": current_date,
             "description": current.get('description', ''),
             "is_baseline_only": False,
             "player_count": len(ranked),

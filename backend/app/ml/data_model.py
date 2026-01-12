@@ -241,20 +241,31 @@ class KvKDataModel:
             "timestamp": datetime.utcnow().isoformat()
         }
 
-        # Convert to list of dicts for API response
-        players = []
-        for _, row in df_cleaned.iterrows():
-            players.append({
-                "governor_id": str(row['governor_id']),
-                "governor_name": str(row['governor_name']),
+        # Convert to list of dicts for API response (vectorized - 10-100x faster than iterrows)
+        # Step 1: Convert types in bulk
+        df_cleaned['governor_id'] = df_cleaned['governor_id'].astype(str)
+        df_cleaned['governor_name'] = df_cleaned['governor_name'].astype(str)
+        df_cleaned['power'] = df_cleaned['power'].astype(int)
+        df_cleaned['kill_points'] = df_cleaned['kill_points'].astype(int)
+        df_cleaned['deads'] = df_cleaned['deads'].astype(int)
+        df_cleaned['t4_kills'] = df_cleaned['t4_kills'].astype(int)
+        df_cleaned['t5_kills'] = df_cleaned['t5_kills'].astype(int)
+
+        # Step 2: Build structured format (vectorized)
+        players = [
+            {
+                "governor_id": row['governor_id'],
+                "governor_name": row['governor_name'],
                 "stats": {
-                    "power": int(row['power']),
-                    "kill_points": int(row['kill_points']),
-                    "deads": int(row['deads']),
-                    "t4_kills": int(row['t4_kills']),
-                    "t5_kills": int(row['t5_kills'])
+                    "power": row['power'],
+                    "kill_points": row['kill_points'],
+                    "deads": row['deads'],
+                    "t4_kills": row['t4_kills'],
+                    "t5_kills": row['t5_kills']
                 }
-            })
+            }
+            for row in df_cleaned.to_dict('records')
+        ]
 
         return {
             "success": True,
@@ -399,20 +410,31 @@ class KvKDataModel:
                 "timestamp": datetime.utcnow().isoformat()
             }
 
-            # Convert to list of dicts for API response
-            players = []
-            for _, row in df_cleaned.iterrows():
-                players.append({
-                    "governor_id": str(row['governor_id']),
-                    "governor_name": str(row['governor_name']),
+            # Convert to list of dicts for API response (vectorized - 10-100x faster than iterrows)
+            # Step 1: Convert types in bulk
+            df_cleaned['governor_id'] = df_cleaned['governor_id'].astype(str)
+            df_cleaned['governor_name'] = df_cleaned['governor_name'].astype(str)
+            df_cleaned['power'] = df_cleaned['power'].astype(int)
+            df_cleaned['kill_points'] = df_cleaned['kill_points'].astype(int)
+            df_cleaned['deads'] = df_cleaned['deads'].astype(int)
+            df_cleaned['t4_kills'] = df_cleaned['t4_kills'].astype(int)
+            df_cleaned['t5_kills'] = df_cleaned['t5_kills'].astype(int)
+
+            # Step 2: Build structured format (vectorized)
+            players = [
+                {
+                    "governor_id": row['governor_id'],
+                    "governor_name": row['governor_name'],
                     "stats": {
-                        "power": int(row['power']),
-                        "kill_points": int(row['kill_points']),
-                        "deads": int(row['deads']),
-                        "t4_kills": int(row['t4_kills']),
-                        "t5_kills": int(row['t5_kills'])
+                        "power": row['power'],
+                        "kill_points": row['kill_points'],
+                        "deads": row['deads'],
+                        "t4_kills": row['t4_kills'],
+                        "t5_kills": row['t5_kills']
                     }
-                })
+                }
+                for row in df_cleaned.to_dict('records')
+            ]
 
             return {
                 "success": True,

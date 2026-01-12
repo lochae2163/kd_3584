@@ -1775,6 +1775,16 @@ function showEditFightModal(seasonId, fightNumber, fight) {
             });
 
             console.log('Response status:', response.status);
+
+            // Check for authentication errors
+            if (response.status === 401) {
+                showMessage('edit-fight-message', '⚠️ Session expired. Please log in again.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/admin-login.html';
+                }, 2000);
+                return;
+            }
+
             const data = await response.json();
             console.log('Response data:', data);
 
@@ -1880,6 +1890,15 @@ function setupCreateFightForm() {
                 },
                 body: JSON.stringify(requestBody)
             });
+
+            // Check for authentication errors
+            if (response.status === 401) {
+                showMessage('create-fight-message', '⚠️ Session expired. Please log in again.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/admin-login.html';
+                }, 2000);
+                return;
+            }
 
             const data = await response.json();
 

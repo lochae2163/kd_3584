@@ -222,11 +222,9 @@ function renderCellValue(colKey, player) {
     // Handle fight KP separately (stored directly on player object)
     if (col.isFightKP) {
         const fightKP = player.fight_kp_gained || 0;
-        const percentage = player.fight_kp_percentage || 0;
         return `
             <div class="stat-cell">
                 <span class="stat-value gained-stat" style="color: #10b981;">${formatFullNumber(fightKP)}</span>
-                ${percentage > 0 ? `<div style="font-size: 0.75em; color: #6ee7b7; margin-top: 2px;">${percentage}% of total</div>` : ''}
             </div>
         `;
     }

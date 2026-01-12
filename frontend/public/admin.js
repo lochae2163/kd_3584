@@ -1627,10 +1627,18 @@ function setupFightPeriodButtons() {
     });
 
     // Edit buttons
-    document.querySelectorAll('.edit-fight-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
+    const editButtons = document.querySelectorAll('.edit-fight-btn');
+    console.log('Setting up edit buttons, found:', editButtons.length);
+    editButtons.forEach((btn, index) => {
+        console.log(`Edit button ${index}:`, btn.dataset.season, btn.dataset.fight);
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Edit button clicked!');
+
             const seasonId = btn.dataset.season;
             const fightNumber = btn.dataset.fight;
+            console.log('Season ID:', seasonId, 'Fight Number:', fightNumber);
 
             // Fetch current fight period data
             try {
@@ -1647,6 +1655,7 @@ function setupFightPeriodButtons() {
                 // Show edit modal
                 showEditFightModal(seasonId, fightNumber, fight);
             } catch (error) {
+                console.error('Error loading fight period:', error);
                 alert('Failed to load fight period data');
             }
         });

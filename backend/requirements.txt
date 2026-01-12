@@ -14,3 +14,4 @@ pydantic-settings==2.1.0
 certifi
 pymongo[srv]
 motor
+redis>=5.0.0

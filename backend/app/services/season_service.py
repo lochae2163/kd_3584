@@ -4,6 +4,7 @@ Season management service
 Handles KvK season lifecycle: creation, activation, completion, archiving
 """
 from app.database import Database
+from app.cache import CacheService, CacheKeys
 from app.models.season import KvKSeason, SeasonStatus
 from datetime import datetime
 from typing import Optional, Dict, List
@@ -83,17 +84,29 @@ class SeasonService:
 
     async def get_active_season(self) -> Optional[Dict]:
         """
-        Get the currently active season
+        Get the currently active season (with caching)
+
+        Cache TTL: 5 minutes (active season changes infrequently)
 
         Returns:
             Active season dict or None
         """
+        # Try cache first
+        cache_key = CacheKeys.active_season()
+        cached = await CacheService.get(cache_key)
+        if cached is not None:
+            return cached
+
+        # Cache miss - fetch from database
         seasons_col = Database.get_collection("kvk_seasons")
         active_season = await seasons_col.find_one({"is_active": True})
 
         if active_season:
             # Remove MongoDB _id
             active_season.pop('_id', None)
+
+        # Cache result (even if None)
+        await CacheService.set(cache_key, active_season, ttl=300)  # 5 minutes
 
         return active_season
 
@@ -178,6 +191,9 @@ class SeasonService:
                     }
                 }
             )
+
+            # Invalidate active season cache
+            await CacheService.delete(CacheKeys.active_season())
 
             logger.info(f"Activated season: {season_id}")
 

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.services.ml_service import ml_service
 from app.services.player_classification_service import player_classification_service
+from app.cache import CacheService, CacheKeys
 
 router = APIRouter(prefix="/api", tags=["Public API"])
 
@@ -12,20 +13,32 @@ async def get_leaderboard(
     limit: int = Query(default=100, le=500)
 ):
     """
-    Get leaderboard with deltas from baseline.
+    Get leaderboard with deltas from baseline (with caching).
+
+    Cache TTL: 1 minute (data updates frequently during KvK)
 
     - sort_by: kill_points_gained, deads_gained, kill_points, power, t5_kills, t4_kills, deads
     - limit: max number of players to return (default: ranked by kill_points_gained)
     """
+    # Try cache first
+    cache_key = CacheKeys.leaderboard(kvk_season_id, sort_by)
+    cached = await CacheService.get(cache_key)
+    if cached is not None:
+        return cached
+
+    # Cache miss - fetch from service
     result = await ml_service.get_leaderboard(
         kvk_season_id=kvk_season_id,
         sort_by=sort_by,
         limit=limit
     )
-    
+
     if not result.get('success'):
         raise HTTPException(status_code=404, detail=result.get('error'))
-    
+
+    # Cache successful result
+    await CacheService.set(cache_key, result, ttl=60)  # 1 minute
+
     return result
 
 
@@ -34,12 +47,26 @@ async def get_player(
     governor_id: str,
     kvk_season_id: str = Query(default="season_1")
 ):
-    """Get individual player stats with deltas."""
+    """
+    Get individual player stats with deltas (with caching).
+
+    Cache TTL: 2 minutes (player stats update less frequently than leaderboard)
+    """
+    # Try cache first
+    cache_key = CacheKeys.player(kvk_season_id, governor_id)
+    cached = await CacheService.get(cache_key)
+    if cached is not None:
+        return cached
+
+    # Cache miss - fetch from service
     result = await ml_service.get_player_stats(kvk_season_id, governor_id)
-    
+
     if not result.get('success'):
         raise HTTPException(status_code=404, detail=result.get('error'))
-    
+
+    # Cache successful result
+    await CacheService.set(cache_key, result, ttl=120)  # 2 minutes
+
     return result
 
 
@@ -105,7 +132,9 @@ async def get_combined_leaderboard(
     include_farms: bool = Query(default=True)
 ):
     """
-    Get combined leaderboard with main + farm account stats merged.
+    Get combined leaderboard with main + farm account stats merged (with caching).
+
+    Cache TTL: 1 minute (same as regular leaderboard)
 
     - Main accounts show combined stats (main + all linked farms)
     - Farm accounts are hidden (merged into their main)
@@ -114,6 +143,13 @@ async def get_combined_leaderboard(
 
     Response includes farm details for expandable view
     """
+    # Try cache first
+    cache_key = CacheKeys.combined_leaderboard(kvk_season_id)
+    cached = await CacheService.get(cache_key)
+    if cached is not None:
+        return cached
+
+    # Cache miss - compute combined leaderboard
     # Get regular leaderboard
     leaderboard_result = await ml_service.get_leaderboard(
         kvk_season_id=kvk_season_id,
@@ -239,7 +275,7 @@ async def get_combined_leaderboard(
     # Apply limit
     combined_players = combined_players[:limit]
 
-    return {
+    result = {
         'success': True,
         'kvk_season_id': kvk_season_id,
         'player_count': len(combined_players),
@@ -249,3 +285,8 @@ async def get_combined_leaderboard(
         'baseline_date': leaderboard_result.get('baseline_date'),
         'current_date': leaderboard_result.get('current_date')
     }
+
+    # Cache result
+    await CacheService.set(cache_key, result, ttl=60)  # 1 minute
+
+    return result

@@ -5,6 +5,7 @@ from app.services.ml_service import ml_service
 from app.services.season_service import season_service
 from app.services.auth_service import get_current_admin
 from app.database import Database
+from app.cache import CacheService, CacheKeys
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -68,6 +69,10 @@ async def upload_baseline(
 
         # Update season stats after baseline upload
         await season_service.update_season_stats(kvk_season_id)
+
+        # Invalidate all caches for this season
+        for pattern in CacheKeys.invalidate_season(kvk_season_id):
+            await CacheService.invalidate(pattern)
 
         return result
 
@@ -137,6 +142,10 @@ async def upload_current(
 
         # Update season stats after current data upload
         await season_service.update_season_stats(kvk_season_id)
+
+        # Invalidate all caches for this season
+        for pattern in CacheKeys.invalidate_season(kvk_season_id):
+            await CacheService.invalidate(pattern)
 
         return result
 

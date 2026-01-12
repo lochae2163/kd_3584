@@ -5,6 +5,7 @@ import logging
 
 from app.config import settings
 from app.database import Database
+from app.cache import CacheService
 from app.routes.auth import router as auth_router
 from app.routes.upload import router as upload_router
 from app.routes.players import router as players_router
@@ -22,9 +23,11 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
     logger.info("🚀 Starting KvK Tracker...")
     await Database.connect_db()
+    await CacheService.connect()
     yield
     logger.info("🛑 Shutting down...")
     await Database.close_db()
+    await CacheService.disconnect()
 
 app = FastAPI(
     title=settings.app_name,

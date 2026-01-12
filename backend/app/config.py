@@ -49,6 +49,12 @@ class Settings(BaseSettings):
     )
     database_name: str = "kvk_tracker"
 
+    # Redis (optional - for caching)
+    redis_url: str = Field(
+        default="",
+        description="Redis connection URL for caching (optional). Example: redis://localhost:6379"
+    )
+
     # CORS - NO WILDCARD DEFAULT
     cors_origins: List[str] = Field(
         default=[],  # Empty by default - must be explicitly configured

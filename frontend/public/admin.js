@@ -868,8 +868,12 @@ async function loadPlayerClassification() {
 
     try {
         const [playersResponse, summaryResponse] = await Promise.all([
-            fetch(`${API_URL}/admin/players/all-with-classification/${activeSeason.season_id}`),
-            fetch(`${API_URL}/admin/players/stats/classification-summary/${activeSeason.season_id}`)
+            fetch(`${API_URL}/admin/players/all-with-classification/${activeSeason.season_id}`, {
+                headers: getAuthHeaders()
+            }),
+            fetch(`${API_URL}/admin/players/stats/classification-summary/${activeSeason.season_id}`, {
+                headers: getAuthHeaders()
+            })
         ]);
 
         if (!playersResponse.ok || !summaryResponse.ok) {

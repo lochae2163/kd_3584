@@ -3109,38 +3109,6 @@ tbody tr:hover {
 
     .leaderboard-container {
         padding: 10px;
-        overflow-x: auto;
-    }
-
-    .leaderboard-table {
-        font-size: 0.75rem;
-        min-width: 600px;
-    }
-
-    .leaderboard-table th,
-    .leaderboard-table td {
-        padding: 8px 6px;
-    }
-
-    .leaderboard-table th.status-col,
-    .leaderboard-table td.status-col {
-        display: none;
-    }
-
-    .player-name-link {
-        font-size: 0.8rem;
-    }
-
-    .player-id {
-        font-size: 0.7rem;
-    }
-
-    .rank-display .medal {
-        font-size: 1.2rem;
-    }
-
-    .rank-display .rank-number {
-        font-size: 0.8rem;
     }
 }
 /* ========================================
@@ -3406,11 +3374,6 @@ tbody tr:hover {
     .seasons-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-
-    .leaderboard-table th,
-    .leaderboard-table td {
-        padding: 12px 10px;
-    }
 }
 
 /* ========================================
@@ -3490,34 +3453,9 @@ tbody tr:hover {
 }
 
 /* ========================================
-   Additional Mobile Table Improvements
+   Additional Mobile Improvements
 ======================================== */
 @media (max-width: 768px) {
-    /* Make table wrapper scrollable */
-    .table-wrapper,
-    .leaderboard-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin: 0 -12px; /* Extend to edges */
-        padding: 0 12px;
-    }
-
-    /* Add scroll indicator shadow */
-    .table-wrapper,
-    .leaderboard-container {
-        background:
-            /* Shadow covers */
-            linear-gradient(90deg, #0f172a 0%, transparent 20px),
-            linear-gradient(90deg, transparent calc(100% - 20px), #0f172a 100%),
-            /* Shadows */
-            radial-gradient(farthest-side at 0% 50%, rgba(0,0,0,0.3), transparent),
-            radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,0.3), transparent);
-        background-repeat: no-repeat;
-        background-size: 20px 100%, 20px 100%, 10px 100%, 10px 100%;
-        background-position: 0 0, 100% 0, 0 0, 100% 0;
-        background-attachment: local, local, scroll, scroll;
-    }
-
     /* Compact header links */
     .header-links {
         display: flex;
@@ -3564,57 +3502,6 @@ tbody tr:hover {
     .filter-group label {
         margin-bottom: 4px;
         font-size: 0.85rem;
-    }
-
-    /* Player cards for mobile */
-    @supports (display: grid) {
-        .leaderboard-table {
-            display: block;
-        }
-
-        .leaderboard-table thead {
-            display: none;
-        }
-
-        .leaderboard-table tbody {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .leaderboard-table tr {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            background: #1e293b;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-        }
-
-        .leaderboard-table td {
-            display: flex;
-            flex-direction: column;
-            border: none;
-            padding: 4px;
-        }
-
-        .leaderboard-table td::before {
-            content: attr(data-label);
-            font-weight: 600;
-            font-size: 0.75rem;
-            color: #94a3b8;
-            margin-bottom: 2px;
-        }
-
-        .leaderboard-table td:first-child {
-            grid-column: 1 / -1;
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
     }
 }
 

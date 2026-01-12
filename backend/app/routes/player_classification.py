@@ -12,10 +12,18 @@ from app.models.player_classification import (
 )
 from typing import List, Dict
 
-router = APIRouter(prefix="/admin/players", tags=["Player Classification"])
+# Public router for classification data (no auth required)
+public_router = APIRouter(prefix="/api/players", tags=["Player Classification - Public"])
+
+# Admin router for classification management (auth required)
+admin_router = APIRouter(prefix="/admin/players", tags=["Player Classification - Admin"])
 
 
-@router.post("/classify")
+# ============================================
+# Admin Endpoints (require authentication)
+# ============================================
+
+@admin_router.post("/classify")
 async def classify_player(
     request: ClassifyPlayerRequest,
     current_admin: str = Depends(get_current_admin)
@@ -41,7 +49,7 @@ async def classify_player(
     return result
 
 
-@router.post("/link-farm")
+@admin_router.post("/link-farm")
 async def link_farm_account(
     request: LinkFarmAccountRequest,
     current_admin: str = Depends(get_current_admin)
@@ -65,7 +73,7 @@ async def link_farm_account(
     return result
 
 
-@router.post("/unlink-farm")
+@admin_router.post("/unlink-farm")
 async def unlink_farm_account(
     request: UnlinkFarmAccountRequest,
     current_admin: str = Depends(get_current_admin)
@@ -88,34 +96,13 @@ async def unlink_farm_account(
     return result
 
 
-@router.get("/classification/{kvk_season_id}/{governor_id}")
-async def get_player_classification(kvk_season_id: str, governor_id: str):
+@admin_router.get("/all-with-classification/{kvk_season_id}")
+async def get_all_players_with_classification(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
-    Get classification data for a specific player
-
-    Returns account type, dead weight status, and farm linking info
-    """
-    classification = await player_classification_service.get_player_classification(
-        governor_id=governor_id,
-        kvk_season_id=kvk_season_id
-    )
-
-    if not classification:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Player {governor_id} not found in season {kvk_season_id}"
-        )
-
-    return {
-        "success": True,
-        "classification": classification
-    }
-
-
-@router.get("/all-with-classification/{kvk_season_id}")
-async def get_all_players_with_classification(kvk_season_id: str):
-    """
-    Get all players with their classification data
+    Get all players with their classification data (Admin only)
 
     Returns list of all players with:
     - Basic stats (power, kill points, etc.)
@@ -135,10 +122,13 @@ async def get_all_players_with_classification(kvk_season_id: str):
     }
 
 
-@router.get("/stats/classification-summary/{kvk_season_id}")
-async def get_classification_summary(kvk_season_id: str):
+@admin_router.get("/stats/classification-summary/{kvk_season_id}")
+async def get_classification_summary(
+    kvk_season_id: str,
+    current_admin: str = Depends(get_current_admin)
+):
     """
-    Get summary statistics of player classifications
+    Get summary statistics of player classifications (Admin only)
 
     Returns counts of:
     - Main accounts
@@ -167,3 +157,28 @@ async def get_classification_summary(kvk_season_id: str):
         "kvk_season_id": kvk_season_id,
         "summary": summary
     }
+
+
+# ============================================
+# Public Endpoints (no authentication)
+# ============================================
+
+@public_router.get("/classification/{kvk_season_id}/{governor_id}")
+async def get_player_classification_public(kvk_season_id: str, governor_id: str):
+    """
+    Get classification data for a specific player (Public API for Discord bot)
+
+    Returns account type, dead weight status, and farm linking info
+    """
+    classification = await player_classification_service.get_player_classification(
+        governor_id=governor_id,
+        kvk_season_id=kvk_season_id
+    )
+
+    if not classification:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Player {governor_id} not found in season {kvk_season_id}"
+        )
+
+    return classification

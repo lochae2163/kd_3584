@@ -409,10 +409,15 @@ class MLService:
                 "error": "No data found for this season"
             }
         
-        # Re-rank by requested field
+        # Get players and calculate fight KP
         players = current.get('players', [])
-        ranked = self.model.rank_players(players, sort_by)[:limit]
-        
+
+        # Calculate fight period KP for all players
+        players_with_fight_kp = await self.calculate_fight_period_kp(kvk_season_id, players)
+
+        # Re-rank by requested field
+        ranked = self.model.rank_players(players_with_fight_kp, sort_by)[:limit]
+
         # Convert datetime objects to ISO strings for JSON serialization
         baseline_date = baseline.get('timestamp') if baseline else None
         if baseline_date and hasattr(baseline_date, 'isoformat'):
@@ -483,8 +488,11 @@ class MLService:
         
         players = current.get('players', [])
 
+        # Calculate fight period KP for all players
+        players_with_fight_kp = await self.calculate_fight_period_kp(kvk_season_id, players)
+
         # Re-rank all players by kill_points_gained to get correct current rank
-        ranked_players = self.model.rank_players(players, "kill_points_gained")
+        ranked_players = self.model.rank_players(players_with_fight_kp, "kill_points_gained")
 
         # Find player in ranked list
         player = next(
@@ -621,6 +629,178 @@ class MLService:
             "timeline_count": len(timeline),
             "timeline": timeline
         }
+
+    async def calculate_fight_period_kp(
+        self,
+        kvk_season_id: str,
+        players: List[Dict]
+    ) -> List[Dict]:
+        """
+        Calculate real fight KP vs trade KP for all players based on fight periods.
+
+        Logic:
+        1. Get all fight periods for the season
+        2. Get all upload history (sorted by timestamp)
+        3. For each player, for each fight:
+           - Find upload before fight start
+           - Find upload after fight end
+           - Calculate KP delta during that fight
+        4. Sum all fight deltas = Real Fight KP
+        5. Total KP - Real Fight KP = Trade KP
+
+        Args:
+            kvk_season_id: Season ID
+            players: List of player dicts with current stats and deltas
+
+        Returns:
+            List of players with added fields:
+            - fight_kp_gained: KP gained during all fights
+            - trade_kp_gained: KP gained during trading periods
+            - fight_kp_percentage: % of KP from fights
+        """
+        from app.services.fight_period_service import fight_period_service
+
+        # Get fight periods
+        fight_periods = await fight_period_service.get_fight_periods(kvk_season_id)
+
+        if not fight_periods:
+            # No fight periods defined, return players with zero fight KP
+            logger.info(f"No fight periods defined for {kvk_season_id}, all KP considered trade KP")
+            for player in players:
+                total_kp = player.get('delta', {}).get('kill_points', 0)
+                player['fight_kp_gained'] = 0
+                player['trade_kp_gained'] = total_kp
+                player['fight_kp_percentage'] = 0.0
+            return players
+
+        # Get upload history
+        history_collection = Database.get_collection("upload_history")
+        cursor = history_collection.find(
+            {"kvk_season_id": kvk_season_id}
+        ).sort("timestamp", 1)  # Ascending order (oldest first)
+
+        all_uploads = await cursor.to_list(length=None)
+
+        if not all_uploads:
+            logger.warning(f"No upload history found for {kvk_season_id}")
+            for player in players:
+                total_kp = player.get('delta', {}).get('kill_points', 0)
+                player['fight_kp_gained'] = 0
+                player['trade_kp_gained'] = total_kp
+                player['fight_kp_percentage'] = 0.0
+            return players
+
+        # Get baseline
+        baseline_collection = Database.get_collection("baselines")
+        baseline = await baseline_collection.find_one({"kvk_season_id": kvk_season_id})
+
+        # Calculate fight KP for each player
+        for player in players:
+            governor_id = player['governor_id']
+            total_kp_gained = player.get('delta', {}).get('kill_points', 0)
+
+            # Get player's baseline KP
+            baseline_player = None
+            if baseline:
+                baseline_players = baseline.get('players', [])
+                baseline_player = next(
+                    (p for p in baseline_players if p.get('governor_id') == governor_id),
+                    None
+                )
+
+            baseline_kp = baseline_player['stats']['kill_points'] if baseline_player else 0
+
+            # Calculate KP gained during each fight period
+            fight_kp_total = 0
+
+            for fight in fight_periods:
+                start_time = fight.get('start_time')
+                end_time = fight.get('end_time')
+
+                # Skip if fight hasn't ended yet
+                if not end_time:
+                    continue
+
+                # Convert datetime strings to datetime objects if needed
+                if isinstance(start_time, str):
+                    start_time = datetime.fromisoformat(start_time)
+                if isinstance(end_time, str):
+                    end_time = datetime.fromisoformat(end_time)
+
+                # Find upload before fight start (closest before start_time)
+                before_upload = None
+                for upload in all_uploads:
+                    upload_time = upload.get('timestamp')
+                    if isinstance(upload_time, str):
+                        upload_time = datetime.fromisoformat(upload_time)
+
+                    if upload_time <= start_time:
+                        before_upload = upload
+                    else:
+                        break  # Uploads are sorted, so stop when we pass start_time
+
+                # Find upload after fight end (closest after end_time)
+                after_upload = None
+                for upload in all_uploads:
+                    upload_time = upload.get('timestamp')
+                    if isinstance(upload_time, str):
+                        upload_time = datetime.fromisoformat(upload_time)
+
+                    if upload_time >= end_time:
+                        after_upload = upload
+                        break  # Found the first upload after end_time
+
+                # Calculate KP delta for this fight
+                if before_upload and after_upload:
+                    # Find player in both uploads
+                    before_players = before_upload.get('players', [])
+                    after_players = after_upload.get('players', [])
+
+                    before_player = next(
+                        (p for p in before_players if p.get('governor_id') == governor_id),
+                        None
+                    )
+                    after_player = next(
+                        (p for p in after_players if p.get('governor_id') == governor_id),
+                        None
+                    )
+
+                    if before_player and after_player:
+                        before_kp = before_player.get('stats', {}).get('kill_points', 0)
+                        after_kp = after_player.get('stats', {}).get('kill_points', 0)
+                        fight_kp_delta = after_kp - before_kp
+
+                        # Only add positive deltas (KP should only increase)
+                        if fight_kp_delta > 0:
+                            fight_kp_total += fight_kp_delta
+
+                elif not before_upload and after_upload:
+                    # No upload before fight, use baseline
+                    after_players = after_upload.get('players', [])
+                    after_player = next(
+                        (p for p in after_players if p.get('governor_id') == governor_id),
+                        None
+                    )
+
+                    if after_player:
+                        after_kp = after_player.get('stats', {}).get('kill_points', 0)
+                        fight_kp_delta = after_kp - baseline_kp
+
+                        if fight_kp_delta > 0:
+                            fight_kp_total += fight_kp_delta
+
+            # Calculate trade KP (remaining KP not from fights)
+            trade_kp = max(0, total_kp_gained - fight_kp_total)
+
+            # Calculate percentage
+            fight_percentage = (fight_kp_total / total_kp_gained * 100) if total_kp_gained > 0 else 0.0
+
+            # Add to player dict
+            player['fight_kp_gained'] = fight_kp_total
+            player['trade_kp_gained'] = trade_kp
+            player['fight_kp_percentage'] = round(fight_percentage, 1)
+
+        return players
 
 
 # Create singleton instance

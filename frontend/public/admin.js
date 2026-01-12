@@ -1729,18 +1729,23 @@ function showEditFightModal(seasonId, fightNumber, fight) {
     // Handle form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log('Form submitted - Save Changes clicked!');
 
         const fightName = document.getElementById('edit-fight-name').value;
         const startTime = document.getElementById('edit-fight-start-time').value;
         const endTime = document.getElementById('edit-fight-end-time').value;
         const description = document.getElementById('edit-fight-description').value;
 
+        console.log('Form values:', { fightName, startTime, endTime, description });
+
         // Convert datetime-local format to ISO format (add seconds if missing)
         const formatToISO = (datetimeLocal) => {
             if (!datetimeLocal) return null;
             // If it doesn't have seconds, add :00
             const withSeconds = datetimeLocal.includes(':00:00') ? datetimeLocal : datetimeLocal + ':00';
-            return new Date(withSeconds).toISOString();
+            const isoDate = new Date(withSeconds).toISOString();
+            console.log(`Converted ${datetimeLocal} -> ${isoDate}`);
+            return isoDate;
         };
 
         const requestBody = {
@@ -1754,8 +1759,12 @@ function showEditFightModal(seasonId, fightNumber, fight) {
             requestBody.end_time = formatToISO(endTime);
         }
 
+        console.log('Request body:', requestBody);
+
         try {
             const token = localStorage.getItem('admin_token');
+            console.log('Sending PUT request to:', `${API_URL}/admin/fight-periods/${seasonId}/${fightNumber}`);
+
             const response = await fetch(`${API_URL}/admin/fight-periods/${seasonId}/${fightNumber}`, {
                 method: 'PUT',
                 headers: {
@@ -1765,7 +1774,9 @@ function showEditFightModal(seasonId, fightNumber, fight) {
                 body: JSON.stringify(requestBody)
             });
 
+            console.log('Response status:', response.status);
             const data = await response.json();
+            console.log('Response data:', data);
 
             if (data.success) {
                 showMessage('edit-fight-message', 'Fight period updated successfully! ✅', 'success');
@@ -1778,7 +1789,7 @@ function showEditFightModal(seasonId, fightNumber, fight) {
             }
         } catch (error) {
             console.error('Failed to update fight period:', error);
-            showMessage('edit-fight-message', 'Failed to update fight period', 'error');
+            showMessage('edit-fight-message', `Failed to update fight period: ${error.message}`, 'error');
         }
     });
 }

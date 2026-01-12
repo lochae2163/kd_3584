@@ -1726,15 +1726,23 @@ function showEditFightModal(seasonId, fightNumber, fight) {
         const endTime = document.getElementById('edit-fight-end-time').value;
         const description = document.getElementById('edit-fight-description').value;
 
+        // Convert datetime-local format to ISO format (add seconds if missing)
+        const formatToISO = (datetimeLocal) => {
+            if (!datetimeLocal) return null;
+            // If it doesn't have seconds, add :00
+            const withSeconds = datetimeLocal.includes(':00:00') ? datetimeLocal : datetimeLocal + ':00';
+            return new Date(withSeconds).toISOString();
+        };
+
         const requestBody = {
             fight_name: fightName,
-            start_time: startTime,
+            start_time: formatToISO(startTime),
             description: description || null
         };
 
         // Only include end_time if provided
         if (endTime) {
-            requestBody.end_time = endTime;
+            requestBody.end_time = formatToISO(endTime);
         }
 
         try {
@@ -1821,17 +1829,25 @@ function setupCreateFightForm() {
             return;
         }
 
+        // Convert datetime-local format to ISO format (add seconds if missing)
+        const formatToISO = (datetimeLocal) => {
+            if (!datetimeLocal) return null;
+            // If it doesn't have seconds, add :00
+            const withSeconds = datetimeLocal.includes(':00:00') ? datetimeLocal : datetimeLocal + ':00';
+            return new Date(withSeconds).toISOString();
+        };
+
         const requestBody = {
             season_id: seasonData.season_id,
             fight_number: fightNumber,
             fight_name: fightName,
-            start_time: startTime,
+            start_time: formatToISO(startTime),
             description: description || null
         };
 
         // Only include end_time if provided
         if (endTime) {
-            requestBody.end_time = endTime;
+            requestBody.end_time = formatToISO(endTime);
         }
 
         try {

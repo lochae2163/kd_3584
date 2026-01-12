@@ -129,8 +129,9 @@ async def get_combined_leaderboard(
     # Get all players with classification
     all_classified = await player_classification_service.get_all_players_with_classification(kvk_season_id)
 
-    # Create lookup for classification
+    # Create O(1) lookups for classification and players
     classification_map = {p['governor_id']: p for p in all_classified}
+    player_lookup = {p['governor_id']: p for p in players}
 
     # Combine main + farms
     combined_players = []
@@ -186,8 +187,8 @@ async def get_combined_leaderboard(
         farm_ids = classification.get('farm_accounts', [])
         if farm_ids and include_farms:
             for farm_id in farm_ids:
-                # Find farm in players list
-                farm_player = next((p for p in players if p['governor_id'] == farm_id), None)
+                # Find farm using O(1) lookup instead of O(n) search
+                farm_player = player_lookup.get(farm_id)
                 if farm_player:
                     # Add farm stats to combined
                     combined['combined_power'] += farm_player['stats']['power']

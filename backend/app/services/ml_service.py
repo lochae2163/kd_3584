@@ -789,15 +789,11 @@ class MLService:
                         if fight_kp_delta > 0:
                             fight_kp_total += fight_kp_delta
 
-            # Calculate trade KP (remaining KP not from fights)
-            trade_kp = max(0, total_kp_gained - fight_kp_total)
-
-            # Calculate percentage
+            # Calculate percentage of KP from fights
             fight_percentage = (fight_kp_total / total_kp_gained * 100) if total_kp_gained > 0 else 0.0
 
-            # Add to player dict
+            # Add to player dict (only expose fight KP, not trade KP to avoid negativity)
             player['fight_kp_gained'] = fight_kp_total
-            player['trade_kp_gained'] = trade_kp
             player['fight_kp_percentage'] = round(fight_percentage, 1)
 
         return players

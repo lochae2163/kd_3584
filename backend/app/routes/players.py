@@ -17,13 +17,12 @@ async def get_leaderboard(
 
     Cache TTL: 1 minute (data updates frequently during KvK)
 
-    - sort_by: kill_points_gained, fight_kp_gained, trade_kp_gained, deads_gained, kill_points, power, t5_kills, t4_kills, deads
+    - sort_by: kill_points_gained, fight_kp_gained, deads_gained, kill_points, power, t5_kills, t4_kills, deads
     - limit: max number of players to return (default: ranked by kill_points_gained)
 
     New fields (when fight periods are defined):
-    - fight_kp_gained: KP gained during marked fight periods only
-    - trade_kp_gained: KP gained during trading periods (total - fight)
-    - fight_kp_percentage: % of total KP from fights
+    - fight_kp_gained: Real combat KP (gained during marked fight periods only)
+    - fight_kp_percentage: % of total KP from actual fighting
     """
     # Try cache first
     cache_key = CacheKeys.leaderboard(kvk_season_id, sort_by)

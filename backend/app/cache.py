@@ -214,6 +214,11 @@ class CacheKeys:
         return f"deaths:{season_id}"
 
     @staticmethod
+    def fight_periods(season_id: str) -> str:
+        """Cache key for fight periods."""
+        return f"fight_periods:{season_id}"
+
+    @staticmethod
     def invalidate_season(season_id: str) -> list:
         """
         Get all cache patterns to invalidate for a season.
@@ -226,5 +231,6 @@ class CacheKeys:
             f"player:{season_id}:*",
             f"classifications:{season_id}",
             f"deaths:{season_id}",
+            f"fight_periods:{season_id}",
             f"season:{season_id}"
         ]

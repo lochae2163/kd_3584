@@ -13,6 +13,7 @@ from app.routes.seasons import admin_router as seasons_admin_router, public_rout
 from app.routes.player_classification import admin_router as player_classification_admin_router, public_router as player_classification_public_router
 from app.routes.verified_deaths import router as verified_deaths_router
 from app.routes.final_kvk import router as final_kvk_router
+from app.routes.fight_periods import admin_router as fight_periods_admin_router, public_router as fight_periods_public_router
 from app.routes.health import router as health_router
 from app.middleware.metrics import performance_metrics_middleware
 
@@ -107,6 +108,10 @@ app.include_router(player_classification_admin_router)
 app.include_router(verified_deaths_router)
 
 app.include_router(final_kvk_router)
+
+# Fight period routes - both public and admin
+app.include_router(fight_periods_public_router)
+app.include_router(fight_periods_admin_router)
 
 @app.get("/")
 async def root():

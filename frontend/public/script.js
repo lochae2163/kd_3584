@@ -29,7 +29,7 @@ const sortSelect = document.getElementById('sort-by');
 // ========================================
 const COLUMNS = {
     'kill_points_gained': { label: 'Kill Points Gained', isGained: true, field: 'kill_points' },
-    'fight_kp_gained': { label: 'Fight KP (Real Combat)', isGained: true, field: 'fight_kp_gained', isFightKP: true },
+    'fight_kp_gained': { label: 'Fight KP', isGained: true, field: 'fight_kp_gained', isFightKP: true },
     'deads_gained': { label: 'Deaths Gained', isGained: true, field: 'deads' },
     'power': { label: 'Power', isGained: false, field: 'power' },
     'kill_points': { label: 'Kill Points', isGained: false, field: 'kill_points' },

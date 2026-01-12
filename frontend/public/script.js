@@ -1,10 +1,7 @@
 // ========================================
 // Configuration
 // ========================================
-// Use localhost for development, production URL for deployed site
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://kd3584-production.up.railway.app';
+// API_URL, formatFullNumber, formatShortNumber, formatDeltaNumber, formatDate are now in utilities.js
 let KVK_SEASON_ID = null; // Will be fetched from active season
 const PLAYERS_PER_PAGE = 50;
 
@@ -52,37 +49,7 @@ function getOrderedColumns(sortBy) {
 // ========================================
 // Utility Functions
 // ========================================
-
-/**
- * Format number with space as thousand separator
- * Example: 6526578201 -> "6 526 578 201"
- */
-function formatFullNumber(num) {
-    if (!num && num !== 0) return '0';
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-/**
- * Format number for summary cards (shortened)
- * Example: 6526578201 -> "6.53B"
- */
-function formatShortNumber(num) {
-    if (!num && num !== 0) return '0';
-    if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
-    if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-}
-
-/**
- * Format delta number with space separators (full number)
- * Example: 125000000 -> "125 000 000"
- */
-function formatDeltaNumber(num) {
-    if (!num || num === 0) return '0';
-    const absNum = Math.abs(num);
-    return absNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
+// Number formatting functions (formatFullNumber, formatShortNumber, formatDeltaNumber) moved to utilities.js
 
 /**
  * Create stat cell HTML with delta badge above
@@ -119,21 +86,8 @@ function createStatCell(value, delta) {
 
 /**
  * Format date for display in UTC
+ * (Now defined in utilities.js)
  */
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-        timeZone: 'UTC',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    }) + ' UTC';
-}
 
 // ========================================
 // Load Stats Summary

@@ -1,9 +1,7 @@
 // ========================================
 // Configuration
 // ========================================
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://kd3584-production.up.railway.app';
+// API_URL and utility functions (formatNumber, showLoading, showError) are now in utilities.js
 
 // ========================================
 // Global State
@@ -15,24 +13,7 @@ let filteredContributions = [];
 // ========================================
 // Utility Functions
 // ========================================
-function formatNumber(num) {
-    if (!num) return '0';
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-function showLoading(elementId, message = 'Loading...') {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.innerHTML = `<div class="loading">${message}</div>`;
-    }
-}
-
-function showError(elementId, message) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.innerHTML = `<div class="error-message">❌ ${message}</div>`;
-    }
-}
+// Utility functions (formatNumber, showLoading, showError) moved to utilities.js
 
 // ========================================
 // Load Active Season

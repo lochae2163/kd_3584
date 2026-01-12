@@ -1,10 +1,7 @@
 // ========================================
 // Configuration
 // ========================================
-// Use localhost for development, production URL for deployed site
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://kd3584-production.up.railway.app';
+// API_URL and utility functions are now in utilities.js
 let KVK_SEASON_ID = null;
 
 // ========================================
@@ -29,35 +26,8 @@ const deltaGrid = document.getElementById('delta-grid');
 // ========================================
 // Utility Functions
 // ========================================
-function formatFullNumber(num) {
-    if (!num && num !== 0) return '0';
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
-
-function formatShortNumber(num) {
-    if (!num && num !== 0) return '0';
-    if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
-    if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-}
-
-function getDeltaClass(value) {
-    if (value > 0) return 'positive';
-    if (value < 0) return 'negative';
-    return 'neutral';
-}
-
-function getDeltaArrow(value) {
-    if (value > 0) return '↑';
-    if (value < 0) return '↓';
-    return '→';
-}
-
-function getDeltaPrefix(value) {
-    if (value > 0) return '+';
-    return '';
-}
+// All utility functions (formatFullNumber, formatShortNumber, getDeltaClass,
+// getDeltaArrow, getDeltaPrefix) moved to utilities.js
 
 // ========================================
 // Load Player Data

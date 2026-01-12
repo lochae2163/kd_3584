@@ -1,10 +1,7 @@
 // ========================================
 // Configuration
 // ========================================
-// Use localhost for development, production URL for deployed site
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:8000'
-    : 'https://kd3584-production.up.railway.app';
+// API_URL, formatDate, formatNumber, showMessage are now in utilities.js
 
 // ========================================
 // Authentication Helper
@@ -41,29 +38,7 @@ const historyList = document.getElementById('history-list');
 // ========================================
 // Utility Functions
 // ========================================
-function showMessage(element, type, message) {
-    element.innerHTML = `<div class="message ${type}">${message}</div>`;
-}
-
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-        timeZone: 'UTC',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    }) + ' UTC';
-}
-
-function formatNumber(num) {
-    if (!num) return '0';
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-}
+// Utility functions (showMessage, formatDate, formatNumber) moved to utilities.js
 
 // ========================================
 // Load Data Status

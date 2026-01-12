@@ -883,8 +883,6 @@ async function loadPlayerClassification() {
         const playersData = await playersResponse.json();
         const summaryData = await summaryResponse.json();
 
-        console.log('Players data:', playersData);
-        console.log('Summary data:', summaryData);
 
         const players = playersData.players || [];
         const summary = summaryData.summary || {};

@@ -446,7 +446,6 @@ async function initializeApp() {
         if (data.success && (data.season || data.season_id)) {
             // Handle both response formats
             KVK_SEASON_ID = data.season ? data.season.season_id : data.season_id;
-            console.log('Active season:', KVK_SEASON_ID);
 
             // Load data
             await loadStats();

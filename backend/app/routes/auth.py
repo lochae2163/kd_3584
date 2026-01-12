@@ -9,7 +9,14 @@ router = APIRouter(prefix="/admin", tags=["Admin Auth"])
 async def login(credentials: UserLogin):
     """
     Admin login endpoint.
-    Send JSON: {"username": "lochan3584", "password": "VungkXU2O6up7Z8h"}
+
+    Request body:
+    {
+        "username": "your-admin-username",
+        "password": "your-admin-password"
+    }
+
+    Returns JWT access token on successful authentication.
     """
     if not AuthService.verify_admin_credentials(
         credentials.username, 

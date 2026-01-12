@@ -343,14 +343,12 @@ async function loadPlayerTimeline() {
         );
 
         if (!response.ok) {
-            console.log('No timeline data available');
             return;
         }
 
         const data = await response.json();
 
         if (!data.success || !data.timeline || data.timeline.length < 2) {
-            console.log('Insufficient timeline data');
             return;
         }
 

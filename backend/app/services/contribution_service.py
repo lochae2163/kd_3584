@@ -157,12 +157,10 @@ class ContributionService:
                     "error": f"No data found for season {kvk_season_id}"
                 }
 
-            # Find player
-            player = None
-            for p in current_data.get('players', []):
-                if p['governor_id'] == governor_id:
-                    player = p
-                    break
+            # Find player using O(1) lookup
+            players = current_data.get('players', [])
+            player_lookup = {p['governor_id']: p for p in players}
+            player = player_lookup.get(governor_id)
 
             if not player:
                 return {

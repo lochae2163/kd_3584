@@ -19,6 +19,21 @@ logger = logging.getLogger(__name__)
 class PlayerClassificationService:
     """Service for managing player account classification"""
 
+    @staticmethod
+    def _build_player_lookup(players: List[Dict]) -> Dict[str, Dict]:
+        """
+        Build O(1) lookup dictionary for players by governor_id.
+
+        Transforms O(n) linear search into O(1) dictionary lookup.
+
+        Args:
+            players: List of player dictionaries
+
+        Returns:
+            Dictionary mapping governor_id to player data
+        """
+        return {p["governor_id"]: p for p in players}
+
     async def classify_player(
         self,
         governor_id: str,
@@ -51,12 +66,10 @@ class PlayerClassificationService:
                     "error": f"No data found for season {kvk_season_id}"
                 }
 
-            # Find player in current data
-            player = None
-            for p in current_data.get("players", []):
-                if p["governor_id"] == governor_id:
-                    player = p
-                    break
+            # Find player in current data using O(1) lookup
+            players = current_data.get("players", [])
+            player_lookup = self._build_player_lookup(players)
+            player = player_lookup.get(governor_id)
 
             if not player:
                 return {
@@ -148,14 +161,11 @@ class PlayerClassificationService:
                     "error": f"No data found for season {kvk_season_id}"
                 }
 
-            # Verify both players exist
-            farm_player = None
-            main_player = None
-            for p in current_data.get("players", []):
-                if p["governor_id"] == farm_governor_id:
-                    farm_player = p
-                if p["governor_id"] == main_governor_id:
-                    main_player = p
+            # Verify both players exist using O(1) lookup
+            players = current_data.get("players", [])
+            player_lookup = self._build_player_lookup(players)
+            farm_player = player_lookup.get(farm_governor_id)
+            main_player = player_lookup.get(main_governor_id)
 
             if not farm_player:
                 return {
@@ -326,17 +336,21 @@ class PlayerClassificationService:
             if not current_data:
                 return None
 
-            for p in current_data.get("players", []):
-                if p["governor_id"] == governor_id:
-                    return {
-                        "governor_id": p["governor_id"],
-                        "governor_name": p["governor_name"],
-                        "account_type": p.get("account_type", "main"),
-                        "is_dead_weight": p.get("is_dead_weight", False),
-                        "linked_to_main": p.get("linked_to_main"),
-                        "farm_accounts": p.get("farm_accounts", []),
-                        "classification_notes": p.get("classification_notes")
-                    }
+            # Use O(1) lookup instead of O(n) linear search
+            players = current_data.get("players", [])
+            player_lookup = self._build_player_lookup(players)
+            p = player_lookup.get(governor_id)
+
+            if p:
+                return {
+                    "governor_id": p["governor_id"],
+                    "governor_name": p["governor_name"],
+                    "account_type": p.get("account_type", "main"),
+                    "is_dead_weight": p.get("is_dead_weight", False),
+                    "linked_to_main": p.get("linked_to_main"),
+                    "farm_accounts": p.get("farm_accounts", []),
+                    "classification_notes": p.get("classification_notes")
+                }
 
             return None
 

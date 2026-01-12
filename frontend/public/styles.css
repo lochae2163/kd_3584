@@ -3609,3 +3609,52 @@ tbody tr:hover {
     }
 }
 
+
+/* ========================================
+   Fight Period Management
+======================================== */
+.fight-periods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.fight-period-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.fight-period-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.icon-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.delete-fight-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+}
+
+.edit-fight-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+}
+
+@media (max-width: 768px) {
+    .fight-periods-grid {
+        grid-template-columns: 1fr;
+    }
+}

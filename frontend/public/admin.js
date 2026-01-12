@@ -1493,6 +1493,232 @@ if (markCompleteBtn) {
 // ========================================
 // Initialize
 // ========================================
+// ========================================
+// Fight Period Management
+// ========================================
+
+async function loadFightPeriods() {
+    const listContainer = document.getElementById('fight-periods-list');
+    const seasonInfoContainer = document.getElementById('fight-period-season-info');
+
+    try {
+        // Get active season
+        const seasonResponse = await fetch(`${API_URL}/api/seasons/active`);
+        const seasonData = await seasonResponse.json();
+
+        if (!seasonData.success || !seasonData.season_id) {
+            seasonInfoContainer.innerHTML = `
+                <div class="message error">No active season found. Create a season first.</div>
+            `;
+            listContainer.innerHTML = '';
+            return;
+        }
+
+        const seasonId = seasonData.season_id;
+        const seasonName = seasonData.season_name || seasonId;
+
+        // Display season info
+        seasonInfoContainer.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>Active Season:</strong> ${seasonName}
+                    <span style="color: #6ee7b7; margin-left: 10px;">(${seasonId})</span>
+                </div>
+                <span style="color: #10b981;">● Active</span>
+            </div>
+        `;
+
+        // Load fight periods for this season
+        const response = await fetch(`${API_URL}/api/fight-periods/${seasonId}`);
+        const data = await response.json();
+
+        if (!data.success || data.count === 0) {
+            listContainer.innerHTML = `
+                <div class="message info">
+                    <strong>No fight periods defined yet.</strong><br>
+                    Create fight periods to track real combat KP vs trading KP.
+                </div>
+            `;
+            return;
+        }
+
+        // Display fight periods
+        let html = '<div class="fight-periods-grid">';
+
+        for (const fight of data.fight_periods) {
+            const startTime = new Date(fight.start_time).toLocaleString();
+            const endTime = fight.end_time ? new Date(fight.end_time).toLocaleString() : 'Ongoing';
+            const statusColor = fight.status === 'completed' ? '#10b981' : fight.status === 'active' ? '#f59e0b' : '#6b7280';
+            const statusIcon = fight.status === 'completed' ? '✅' : fight.status === 'active' ? '⚔️' : '📅';
+
+            html += `
+                <div class="fight-period-card" style="border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 15px; background: rgba(16, 185, 129, 0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; color: #10b981;">
+                                ${statusIcon} Fight ${fight.fight_number}: ${fight.fight_name}
+                            </h4>
+                            <span style="color: ${statusColor}; font-size: 0.9em;">
+                                ${fight.status.toUpperCase()}
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="icon-btn edit-fight-btn" data-season="${seasonId}" data-fight="${fight.fight_number}" title="Edit">
+                                ✏️
+                            </button>
+                            <button class="icon-btn delete-fight-btn" data-season="${seasonId}" data-fight="${fight.fight_number}" title="Delete">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.9em; color: #94a3b8;">
+                        <div><strong>Start:</strong> ${startTime}</div>
+                        <div><strong>End:</strong> ${endTime}</div>
+                        ${fight.description ? `<div style="margin-top: 8px; font-style: italic;">${fight.description}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        html += '</div>';
+        listContainer.innerHTML = html;
+
+        // Setup delete/edit buttons
+        setupFightPeriodButtons();
+
+    } catch (error) {
+        console.error('Failed to load fight periods:', error);
+        listContainer.innerHTML = '<div class="message error">Failed to load fight periods</div>';
+    }
+}
+
+function setupFightPeriodButtons() {
+    // Delete buttons
+    document.querySelectorAll('.delete-fight-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const seasonId = btn.dataset.season;
+            const fightNumber = btn.dataset.fight;
+
+            if (!confirm(`Are you sure you want to delete Fight ${fightNumber}? This will affect KP calculations!`)) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('admin_token');
+                const response = await fetch(`${API_URL}/admin/fight-periods/${seasonId}/${fightNumber}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('delete-fight-message', 'Fight period deleted successfully!', 'success');
+                    loadFightPeriods(); // Reload
+                } else {
+                    showMessage('delete-fight-message', `Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('delete-fight-message', 'Failed to delete fight period', 'error');
+            }
+        });
+    });
+
+    // TODO: Edit buttons (for future enhancement)
+    document.querySelectorAll('.edit-fight-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            alert('Edit functionality coming soon! For now, delete and recreate the fight period.');
+        });
+    });
+}
+
+function setupCreateFightForm() {
+    const toggleBtn = document.getElementById('toggle-create-fight-btn');
+    const formContainer = document.getElementById('create-fight-form-container');
+    const cancelBtn = document.getElementById('cancel-fight-btn');
+    const form = document.getElementById('create-fight-form');
+
+    // Toggle form visibility
+    toggleBtn.addEventListener('click', () => {
+        const isHidden = formContainer.style.display === 'none';
+        formContainer.style.display = isHidden ? 'block' : 'none';
+        toggleBtn.textContent = isHidden ? '❌ Cancel' : '➕ Create New Fight Period';
+
+        if (isHidden) {
+            // Scroll to form
+            formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        formContainer.style.display = 'none';
+        toggleBtn.textContent = '➕ Create New Fight Period';
+        form.reset();
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fightNumber = parseInt(document.getElementById('fight-number').value);
+        const fightName = document.getElementById('fight-name').value;
+        const startTime = document.getElementById('fight-start-time').value;
+        const endTime = document.getElementById('fight-end-time').value;
+        const description = document.getElementById('fight-description').value;
+
+        // Get active season
+        const seasonResponse = await fetch(`${API_URL}/api/seasons/active`);
+        const seasonData = await seasonResponse.json();
+
+        if (!seasonData.success) {
+            showMessage('create-fight-message', 'No active season found', 'error');
+            return;
+        }
+
+        const requestBody = {
+            season_id: seasonData.season_id,
+            fight_number: fightNumber,
+            fight_name: fightName,
+            start_time: startTime,
+            description: description || null
+        };
+
+        // Only include end_time if provided
+        if (endTime) {
+            requestBody.end_time = endTime;
+        }
+
+        try {
+            const token = localStorage.getItem('admin_token');
+            const response = await fetch(`${API_URL}/admin/fight-periods`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showMessage('create-fight-message', 'Fight period created successfully! ⚔️', 'success');
+                form.reset();
+                formContainer.style.display = 'none';
+                toggleBtn.textContent = '➕ Create New Fight Period';
+                loadFightPeriods(); // Reload list
+            } else {
+                showMessage('create-fight-message', `Error: ${data.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Failed to create fight period:', error);
+            showMessage('create-fight-message', 'Failed to create fight period', 'error');
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Display username
     const adminUsername = localStorage.getItem('admin_username');
@@ -1519,4 +1745,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadHistory();
     loadFileManagement();
     loadVerificationStatus();
+
+    // Load fight periods
+    loadFightPeriods();
+    setupCreateFightForm();
 });

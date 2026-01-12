@@ -29,6 +29,7 @@ const sortSelect = document.getElementById('sort-by');
 // ========================================
 const COLUMNS = {
     'kill_points_gained': { label: 'Kill Points Gained', isGained: true, field: 'kill_points' },
+    'fight_kp_gained': { label: 'Fight KP (Real Combat)', isGained: true, field: 'fight_kp_gained', isFightKP: true },
     'deads_gained': { label: 'Deaths Gained', isGained: true, field: 'deads' },
     'power': { label: 'Power', isGained: false, field: 'power' },
     'kill_points': { label: 'Kill Points', isGained: false, field: 'kill_points' },
@@ -217,6 +218,18 @@ function renderCellValue(colKey, player) {
     const col = COLUMNS[colKey];
     const stats = player.stats || {};
     const delta = player.delta || {};
+
+    // Handle fight KP separately (stored directly on player object)
+    if (col.isFightKP) {
+        const fightKP = player.fight_kp_gained || 0;
+        const percentage = player.fight_kp_percentage || 0;
+        return `
+            <div class="stat-cell">
+                <span class="stat-value gained-stat" style="color: #10b981;">${formatFullNumber(fightKP)}</span>
+                ${percentage > 0 ? `<div style="font-size: 0.75em; color: #6ee7b7; margin-top: 2px;">${percentage}% of total</div>` : ''}
+            </div>
+        `;
+    }
 
     if (col.isGained) {
         // For "gained" columns, show only the delta value in green

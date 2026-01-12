@@ -42,6 +42,81 @@
             </div>
         </section>
 
+        <!-- Fight Period Management -->
+        <section class="admin-section" style="border: 2px solid #10b981; border-radius: 12px; padding: 25px;">
+            <h2>⚔️ Fight Period Management</h2>
+            <p class="section-desc" style="color: #6ee7b7;">
+                Mark time periods when real KvK fights occur. System will calculate <strong>Real Fight KP</strong> (combat contribution) separately from trading KP.
+            </p>
+
+            <!-- Active Season Display -->
+            <div id="fight-period-season-info" class="season-info-box" style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div class="loading">Loading active season...</div>
+            </div>
+
+            <!-- Fight Periods List -->
+            <div id="fight-periods-list" class="fight-periods-list">
+                <div class="loading">Loading fight periods...</div>
+            </div>
+
+            <!-- Create Fight Period Form -->
+            <div id="create-fight-form-container" style="display: none; margin-top: 25px; padding-top: 25px; border-top: 1px solid rgba(16, 185, 129, 0.3);">
+                <h3>➕ Create New Fight Period</h3>
+                <form id="create-fight-form">
+                    <div class="form-group">
+                        <label for="fight-number">Fight Number *</label>
+                        <input type="number" id="fight-number" min="1" required
+                               placeholder="1, 2, 3...">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fight-name">Fight Name *</label>
+                        <input type="text" id="fight-name" required
+                               placeholder="e.g., Pass 1 - Kingdom 1234">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fight-start-time">Start Time *</label>
+                        <input type="datetime-local" id="fight-start-time" required>
+                        <small style="color: #6ee7b7; margin-top: 5px; display: block;">
+                            When did the fight start?
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fight-end-time">End Time (optional)</label>
+                        <input type="datetime-local" id="fight-end-time">
+                        <small style="color: #6ee7b7; margin-top: 5px; display: block;">
+                            Leave empty for ongoing fights. You can set this later.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fight-description">Description (optional)</label>
+                        <textarea id="fight-description" rows="2"
+                                  placeholder="e.g., First major battle of KvK 6"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="upload-btn" style="background: #10b981;">
+                            ⚔️ Create Fight Period
+                        </button>
+                        <button type="button" id="cancel-fight-btn" class="back-link"
+                                style="padding: 10px 20px;">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+                <div id="create-fight-message"></div>
+            </div>
+
+            <!-- Toggle Create Form Button -->
+            <button id="toggle-create-fight-btn" class="upload-btn"
+                    style="background: #10b981; margin-top: 20px;">
+                ➕ Create New Fight Period
+            </button>
+        </section>
+
         <!-- Final KvK Data Upload -->
         <section class="admin-section" style="border: 2px solid #7c3aed; border-radius: 12px; padding: 25px;">
             <h2>🏆 Final KvK Data Upload (End of KvK)</h2>

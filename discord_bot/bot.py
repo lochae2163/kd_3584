@@ -784,19 +784,6 @@ class KvKBot(commands.Cog):
             inline=False
         )
 
-        # History command - NEW
-        embed.add_field(
-            name="📜 **/history [limit]** ✨ NEW!",
-            value="View recent upload history for the season:\n"
-                  "• 📅 **Upload dates** - When data was collected\n"
-                  "• 📝 **Descriptions** - What each upload represents\n"
-                  "• 👥 **Player counts** - Active players tracked\n"
-                  "• ⚔️ **Total gains** - Kingdom-wide KP/Deaths/Kills\n\n"
-                  "**Limit:** 1-10 uploads (default: 5)\n"
-                  "**Note:** For full history, visit the website!\n\n"
-                  "**Example:** `/history 5`\n━━━━━━━━━━━━━━━━━━━━━━━━",
-            inline=False
-        )
 
         # Timeline command
         embed.add_field(
@@ -858,7 +845,7 @@ class KvKBot(commands.Cog):
                   "• 🟢 **Green** = Positive change (good for KP, bad for deaths)\n"
                   "• 🔴 **Red** = Negative change\n"
                   "• 🔄 **Data updates:** When admin uploads new scans\n"
-                  "• 🌐 **Web version:** https://kd3584-production.up.railway.app\n━━━━━━━━━━━━━━━━━━━━━━━━",
+                  "• 🌐 **Web version:** https://kd-3584.vercel.app\n━━━━━━━━━━━━━━━━━━━━━━━━",
             inline=False
         )
 
@@ -866,99 +853,12 @@ class KvKBot(commands.Cog):
         embed.add_field(
             name="🔗 Useful Links",
             value="• 🌐 **Leaderboard:** [kd-3584.vercel.app](https://kd-3584.vercel.app)\n"
-                  "• 🔧 **API Status:** [Railway Dashboard](https://kd3584-production.up.railway.app/)\n"
                   "• 📖 **Full Documentation:** Type `/help` anytime",
             inline=False
         )
 
         embed.set_footer(text="Kingdom 3584 KvK Tracker • Season 1")
         await interaction.followup.send(embed=embed, ephemeral=True)
-
-    @app_commands.command(name="history", description="View upload history for the current season")
-    @app_commands.describe(limit="Number of recent uploads to show (default: 5)")
-    async def history(self, interaction: discord.Interaction, limit: int = 5):
-        """Show upload history for the season"""
-        await interaction.response.defer()
-
-        try:
-            # Limit to reasonable range (max 10 for Discord)
-            limit = max(1, min(limit, 10))
-
-            url = f"{API_URL}/api/history?kvk_season_id={self.get_season_id()}&limit={limit}"
-
-            async with self.session.get(url) as response:
-                if response.status != 200:
-                    await interaction.followup.send(
-                        "❌ No upload history found for this season.",
-                        ephemeral=True
-                    )
-                    return
-
-                data = await response.json()
-                uploads = data.get('uploads', [])
-
-                if not uploads:
-                    await interaction.followup.send(
-                        "❌ No upload history found for this season.",
-                        ephemeral=True
-                    )
-                    return
-
-                embed = discord.Embed(
-                    title=f"📜 Upload History",
-                    description=f"Recent {len(uploads)} uploads for Season {self.get_season_id()}\n━━━━━━━━━━━━━━━━━━━━━━━━",
-                    color=discord.Color.purple(),
-                    timestamp=datetime.utcnow()
-                )
-
-                for upload in uploads:
-                    timestamp = upload.get('timestamp')
-                    if timestamp:
-                        # Format timestamp nicely
-                        dt = datetime.fromisoformat(timestamp.replace('Z', '+00:00')) if isinstance(timestamp, str) else timestamp
-                        date_str = dt.strftime('%b %d, %H:%M')
-                    else:
-                        date_str = 'Unknown date'
-
-                    description = upload.get('description', 'No description')
-                    player_count = upload.get('player_count', 0)
-
-                    summary = upload.get('summary', {})
-                    total_kp_gained = summary.get('total_kill_points_gained', 0)
-                    total_deads_gained = summary.get('total_deads_gained', 0)
-                    total_t5_gained = summary.get('total_t5_kills_gained', 0)
-                    total_t4_gained = summary.get('total_t4_kills_gained', 0)
-
-                    # Build compact stats display
-                    stats_lines = []
-                    if total_kp_gained > 0:
-                        stats_lines.append(f"⚔️ KP: {self.format_number(total_kp_gained)}")
-                    if total_deads_gained > 0:
-                        stats_lines.append(f"☠️ Deaths: {self.format_number(total_deads_gained)}")
-                    if total_t5_gained > 0:
-                        stats_lines.append(f"🎯 T5: {self.format_number(total_t5_gained)}")
-                    if total_t4_gained > 0:
-                        stats_lines.append(f"⚡ T4: {self.format_number(total_t4_gained)}")
-
-                    stats_text = " • ".join(stats_lines) if stats_lines else "No delta data"
-
-                    embed.add_field(
-                        name=f"{date_str}",
-                        value=f"📝 {description}\n"
-                              f"👥 {player_count} players\n"
-                              f"{stats_text}\n\u200b",
-                        inline=False
-                    )
-
-                embed.set_footer(text="Kingdom 3584 KvK Tracker • Season 1")
-                await interaction.followup.send(embed=embed)
-
-        except Exception as e:
-            logger.error(f"History command error: {e}", exc_info=True)
-            await interaction.followup.send(
-                f"❌ Error: {str(e)}",
-                ephemeral=True
-            )
 
     @app_commands.command(name="timeline", description="View a player's progress timeline")
     @app_commands.describe(player="Search by player name or Governor ID")

@@ -1626,12 +1626,156 @@ function setupFightPeriodButtons() {
         });
     });
 
-    // TODO: Edit buttons (for future enhancement)
+    // Edit buttons
     document.querySelectorAll('.edit-fight-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            alert('Edit functionality coming soon! For now, delete and recreate the fight period.');
+        btn.addEventListener('click', async () => {
+            const seasonId = btn.dataset.season;
+            const fightNumber = btn.dataset.fight;
+
+            // Fetch current fight period data
+            try {
+                const response = await fetch(`${API_URL}/api/fight-periods/${seasonId}/${fightNumber}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    alert('Failed to load fight period data');
+                    return;
+                }
+
+                const fight = data.fight_period;
+
+                // Show edit modal
+                showEditFightModal(seasonId, fightNumber, fight);
+            } catch (error) {
+                alert('Failed to load fight period data');
+            }
         });
     });
+}
+
+function showEditFightModal(seasonId, fightNumber, fight) {
+    // Create modal HTML
+    const modalHtml = `
+        <div id="edit-fight-modal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+            <div style="background: #1e293b; border-radius: 12px; padding: 30px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                <h3 style="margin: 0 0 20px 0; color: #10b981;">✏️ Edit Fight Period ${fightNumber}</h3>
+
+                <form id="edit-fight-form">
+                    <div class="form-group">
+                        <label for="edit-fight-name">Fight Name *</label>
+                        <input type="text" id="edit-fight-name" value="${fight.fight_name}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-fight-start-time">Start Time *</label>
+                        <input type="datetime-local" id="edit-fight-start-time" value="${formatDateTimeLocal(fight.start_time)}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-fight-end-time">End Time</label>
+                        <input type="datetime-local" id="edit-fight-end-time" value="${fight.end_time ? formatDateTimeLocal(fight.end_time) : ''}">
+                        <small style="color: #6ee7b7; margin-top: 5px; display: block;">
+                            Leave empty for ongoing fights
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-fight-description">Description</label>
+                        <textarea id="edit-fight-description" rows="2">${fight.description || ''}</textarea>
+                    </div>
+
+                    <div id="edit-fight-message"></div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="upload-btn" style="background: #10b981;">
+                            💾 Save Changes
+                        </button>
+                        <button type="button" id="cancel-edit-btn" class="back-link" style="padding: 10px 20px;">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Setup form handlers
+    const modal = document.getElementById('edit-fight-modal');
+    const form = document.getElementById('edit-fight-form');
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+
+    // Close modal
+    const closeModal = () => {
+        modal.remove();
+    };
+
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fightName = document.getElementById('edit-fight-name').value;
+        const startTime = document.getElementById('edit-fight-start-time').value;
+        const endTime = document.getElementById('edit-fight-end-time').value;
+        const description = document.getElementById('edit-fight-description').value;
+
+        const requestBody = {
+            fight_name: fightName,
+            start_time: startTime,
+            description: description || null
+        };
+
+        // Only include end_time if provided
+        if (endTime) {
+            requestBody.end_time = endTime;
+        }
+
+        try {
+            const token = localStorage.getItem('admin_token');
+            const response = await fetch(`${API_URL}/admin/fight-periods/${seasonId}/${fightNumber}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showMessage('edit-fight-message', 'Fight period updated successfully! ✅', 'success');
+                setTimeout(() => {
+                    closeModal();
+                    loadFightPeriods(); // Reload list
+                }, 1000);
+            } else {
+                showMessage('edit-fight-message', `Error: ${data.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Failed to update fight period:', error);
+            showMessage('edit-fight-message', 'Failed to update fight period', 'error');
+        }
+    });
+}
+
+function formatDateTimeLocal(isoString) {
+    // Convert ISO string to datetime-local format (YYYY-MM-DDTHH:MM)
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 function setupCreateFightForm() {

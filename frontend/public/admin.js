@@ -1063,7 +1063,10 @@ async function classifyPlayer(governorId, accountType, isDeadWeight, notes) {
     try {
         const response = await fetch(`${API_URL}/admin/players/classify`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 governor_id: governorId,
                 kvk_season_id: activeSeason.season_id,
@@ -1101,7 +1104,10 @@ async function linkFarmAccount(farmGovernorId, mainGovernorId) {
     try {
         const response = await fetch(`${API_URL}/admin/players/link-farm`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({
                 farm_governor_id: farmGovernorId,
                 main_governor_id: mainGovernorId,

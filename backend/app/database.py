@@ -82,7 +82,14 @@ class Database:
             baselines_col = db["baselines"]
 
             # Index for finding baseline by season
-            await baselines_col.create_index("kvk_season_id", unique=True)
+            try:
+                await baselines_col.create_index("kvk_season_id", unique=True)
+            except Exception as e:
+                if "duplicate key" in str(e).lower():
+                    logger.warning(f"⚠️  Cannot create unique index on baselines.kvk_season_id - duplicate entries exist")
+                    logger.warning(f"⚠️  Run: python -m app.scripts.fix_duplicate_baselines to fix this issue")
+                else:
+                    raise
 
             # Index for timestamp
             await baselines_col.create_index([("timestamp", -1)])

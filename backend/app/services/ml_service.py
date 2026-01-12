@@ -49,18 +49,20 @@ class MLService:
         # Save to database (replace existing baseline for this season)
         collection = Database.get_collection("baselines")
 
-        # Delete existing baseline for this season
-        await collection.delete_many({"kvk_season_id": kvk_season_id})
-
-        # Insert new baseline
-        insert_result = await collection.insert_one(baseline_doc)
+        # Use upsert for atomic operation (prevents race conditions)
+        update_result = await collection.update_one(
+            {"kvk_season_id": kvk_season_id},
+            {"$set": baseline_doc},
+            upsert=True
+        )
 
         return {
             "success": True,
             "message": f"Baseline saved with {result['player_count']} players",
             "player_count": result['player_count'],
             "kvk_season_id": kvk_season_id,
-            "mongo_id": str(insert_result.inserted_id)
+            "upserted": update_result.upserted_id is not None,
+            "modified": update_result.modified_count > 0
         }
 
     async def process_and_save_baseline_excel(
@@ -104,18 +106,20 @@ class MLService:
         # Save to database (replace existing baseline for this season)
         collection = Database.get_collection("baselines")
 
-        # Delete existing baseline for this season
-        await collection.delete_many({"kvk_season_id": kvk_season_id})
-
-        # Insert new baseline
-        insert_result = await collection.insert_one(baseline_doc)
+        # Use upsert for atomic operation (prevents race conditions)
+        update_result = await collection.update_one(
+            {"kvk_season_id": kvk_season_id},
+            {"$set": baseline_doc},
+            upsert=True
+        )
 
         return {
             "success": True,
             "message": f"Baseline saved with {result['player_count']} players from Excel",
             "player_count": result['player_count'],
             "kvk_season_id": kvk_season_id,
-            "mongo_id": str(insert_result.inserted_id),
+            "upserted": update_result.upserted_id is not None,
+            "modified": update_result.modified_count > 0,
             "sheet_used": result['processing_stats'].get('sheet_used')
         }
     
@@ -200,8 +204,12 @@ class MLService:
 
         # Save to current_data (replace existing)
         current_collection = Database.get_collection("current_data")
-        await current_collection.delete_many({"kvk_season_id": kvk_season_id})
-        await current_collection.insert_one(current_doc)
+        # Use upsert for atomic operation (prevents race conditions)
+        await current_collection.update_one(
+            {"kvk_season_id": kvk_season_id},
+            {"$set": current_doc},
+            upsert=True
+        )
 
         # Also save to history (append, don't replace)
         # Include full player snapshots for historical tracking (Phase 2A)
@@ -318,8 +326,12 @@ class MLService:
 
         # Save to current_data (replace existing)
         current_collection = Database.get_collection("current_data")
-        await current_collection.delete_many({"kvk_season_id": kvk_season_id})
-        await current_collection.insert_one(current_doc)
+        # Use upsert for atomic operation (prevents race conditions)
+        await current_collection.update_one(
+            {"kvk_season_id": kvk_season_id},
+            {"$set": current_doc},
+            upsert=True
+        )
 
         # Also save to history (append, don't replace)
         # Include full player snapshots for historical tracking (Phase 2A)

@@ -15,3 +15,4 @@ certifi
 pymongo[srv]
 motor
 redis>=5.0.0
+sentry-sdk[fastapi]>=1.40.0

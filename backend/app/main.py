@@ -13,10 +13,31 @@ from app.routes.seasons import admin_router as seasons_admin_router, public_rout
 from app.routes.player_classification import admin_router as player_classification_admin_router, public_router as player_classification_public_router
 from app.routes.verified_deaths import router as verified_deaths_router
 from app.routes.final_kvk import router as final_kvk_router
+from app.routes.health import router as health_router
+from app.middleware.metrics import performance_metrics_middleware
 
+# Initialize Sentry error monitoring (optional)
+if settings.sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        integrations=[
+            FastApiIntegration(),
+            LoggingIntegration(level=logging.INFO, event_level=logging.ERROR)
+        ],
+        traces_sample_rate=0.1,  # 10% of requests for performance monitoring
+        environment=settings.environment,
+        release=settings.app_version,
+    )
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+if settings.sentry_dsn:
+    logger.info("✅ Sentry error monitoring enabled")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -61,7 +82,13 @@ app.add_middleware(
     max_age=86400,
 )
 
+# Add performance metrics middleware
+app.middleware("http")(performance_metrics_middleware)
+
 logger.info(f"✅ CORS enabled for origins: {allowed_origins}")
+
+# Include health check routes (before other routes for priority)
+app.include_router(health_router)
 
 app.include_router(auth_router)
 

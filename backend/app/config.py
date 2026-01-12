@@ -55,6 +55,16 @@ class Settings(BaseSettings):
         description="Redis connection URL for caching (optional). Example: redis://localhost:6379"
     )
 
+    # Sentry (optional - for error monitoring)
+    sentry_dsn: str = Field(
+        default="",
+        description="Sentry DSN for error monitoring (optional). Get from sentry.io"
+    )
+    environment: str = Field(
+        default="production",
+        description="Environment name (production, staging, development)"
+    )
+
     # CORS - NO WILDCARD DEFAULT
     cors_origins: List[str] = Field(
         default=[],  # Empty by default - must be explicitly configured

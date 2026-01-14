@@ -61,11 +61,21 @@ class FightPeriodService:
                     "error": "start_time must be before end_time"
                 }
 
-            # Determine status
-            now = datetime.utcnow()
-            if request.end_time and request.end_time < now:
+            # Determine status - use timezone-aware datetime for comparison
+            from datetime import timezone
+            now = datetime.now(timezone.utc)
+
+            # Make request times timezone-aware if they aren't
+            start_time = request.start_time
+            end_time = request.end_time
+            if start_time.tzinfo is None:
+                start_time = start_time.replace(tzinfo=timezone.utc)
+            if end_time and end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+
+            if end_time and end_time < now:
                 status = FightPeriodStatus.COMPLETED
-            elif request.start_time > now:
+            elif start_time > now:
                 status = FightPeriodStatus.UPCOMING
             else:
                 status = FightPeriodStatus.ACTIVE
@@ -75,8 +85,8 @@ class FightPeriodService:
                 "season_id": request.season_id,
                 "fight_number": request.fight_number,
                 "fight_name": request.fight_name,
-                "start_time": request.start_time,
-                "end_time": request.end_time,
+                "start_time": start_time,
+                "end_time": end_time,
                 "status": status.value,
                 "description": request.description,
                 "created_at": now,

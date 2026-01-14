@@ -38,6 +38,9 @@ class FightPeriodService:
         try:
             collection = Database.get_collection("fight_periods")
 
+            logger.info(f"Creating fight period: season={request.season_id}, fight_number={request.fight_number}, name={request.fight_name}")
+            logger.info(f"Start time: {request.start_time}, End time: {request.end_time}")
+
             # Validate: check if fight number already exists for this season
             existing = await collection.find_one({
                 "season_id": request.season_id,
@@ -45,6 +48,7 @@ class FightPeriodService:
             })
 
             if existing:
+                logger.warning(f"Fight {request.fight_number} already exists for season {request.season_id}")
                 return {
                     "success": False,
                     "error": f"Fight {request.fight_number} already exists for season {request.season_id}"

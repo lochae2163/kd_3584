@@ -84,12 +84,17 @@ async def create_fight_period(
     }
     ```
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Create fight period request received: {request}")
+
     result = await fight_period_service.create_fight_period(
         request,
         admin_username=current_admin
     )
 
     if not result['success']:
+        logger.warning(f"Create fight period failed: {result['error']}")
         raise HTTPException(status_code=400, detail=result['error'])
 
     return result

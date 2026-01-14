@@ -163,14 +163,24 @@ baselineForm.addEventListener('submit', async (e) => {
     formData.append('file', file);
     
     try {
+        const token = localStorage.getItem('admin_token');
         const response = await fetch(
             `${API_URL}/admin/upload/baseline?kvk_season_id=${seasonId}`,
-            { 
-                method: 'POST', 
+            {
+                method: 'POST',
                 body: formData,
-                mode: 'cors'  // Add this
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             }
         );
+
+        // Check for authentication errors
+        if (response.status === 401) {
+            showMessage(baselineMessage, 'error', '⚠️ Session expired. Please log in again.');
+            setTimeout(() => { window.location.href = '/admin-login.html'; }, 2000);
+            return;
+        }
         
         if (!response.ok) {
             const error = await response.json();
@@ -216,14 +226,24 @@ currentForm.addEventListener('submit', async (e) => {
     formData.append('file', file);
     
     try {
+        const token = localStorage.getItem('admin_token');
         const response = await fetch(
             `${API_URL}/admin/upload/current?kvk_season_id=${seasonId}&description=${encodeURIComponent(description)}`,
-            { 
-                method: 'POST', 
+            {
+                method: 'POST',
                 body: formData,
-                mode: 'cors'  // Add this
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
             }
         );
+
+        // Check for authentication errors
+        if (response.status === 401) {
+            showMessage(currentMessage, 'error', '⚠️ Session expired. Please log in again.');
+            setTimeout(() => { window.location.href = '/admin-login.html'; }, 2000);
+            return;
+        }
         
         if (!response.ok) {
             const error = await response.json();

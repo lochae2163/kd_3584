@@ -1863,6 +1863,7 @@ function setupCreateFightForm() {
     // Handle form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log('Create fight form submitted');
 
         const fightNumber = parseInt(document.getElementById('fight-number').value);
         const fightName = document.getElementById('fight-name').value;
@@ -1870,9 +1871,12 @@ function setupCreateFightForm() {
         const endTime = document.getElementById('fight-end-time').value;
         const description = document.getElementById('fight-description').value;
 
+        console.log('Form values:', { fightNumber, fightName, startTime, endTime, description });
+
         // Get active season
         const seasonResponse = await fetch(`${API_URL}/api/seasons/active`);
         const seasonData = await seasonResponse.json();
+        console.log('Season data:', seasonData);
 
         if (!seasonData.success) {
             showMessage('create-fight-message', 'No active season found', 'error');
@@ -1900,8 +1904,12 @@ function setupCreateFightForm() {
             requestBody.end_time = formatToISO(endTime);
         }
 
+        console.log('Request body:', requestBody);
+
         try {
             const token = localStorage.getItem('admin_token');
+            console.log('Token exists:', !!token);
+
             const response = await fetch(`${API_URL}/admin/fight-periods`, {
                 method: 'POST',
                 headers: {
@@ -1910,6 +1918,8 @@ function setupCreateFightForm() {
                 },
                 body: JSON.stringify(requestBody)
             });
+
+            console.log('Response status:', response.status);
 
             // Check for authentication errors
             if (response.status === 401) {
@@ -1921,6 +1931,7 @@ function setupCreateFightForm() {
             }
 
             const data = await response.json();
+            console.log('Response data:', data);
 
             if (data.success) {
                 showMessage('create-fight-message', 'Fight period created successfully! ⚔️', 'success');

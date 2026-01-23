@@ -198,19 +198,30 @@ class FightPeriodService:
         try:
             collection = Database.get_collection("fight_periods")
 
+            logger.info(f"Update fight period request: season={season_id}, fight={fight_number}")
+            logger.info(f"Request data: fight_name={request.fight_name}, start_time={request.start_time}, end_time={request.end_time}")
+
             # Build update document (only include fields that are provided)
-            update_doc = {"updated_at": datetime.utcnow()}
+            from datetime import timezone
+            update_doc = {"updated_at": datetime.now(timezone.utc)}
 
             if request.fight_name is not None:
                 update_doc["fight_name"] = request.fight_name
+                logger.info(f"Setting fight_name: {request.fight_name}")
             if request.start_time is not None:
                 update_doc["start_time"] = request.start_time
+                logger.info(f"Setting start_time: {request.start_time}")
             if request.end_time is not None:
                 update_doc["end_time"] = request.end_time
+                logger.info(f"Setting end_time: {request.end_time}")
             if request.description is not None:
                 update_doc["description"] = request.description
+                logger.info(f"Setting description: {request.description}")
             if request.status is not None:
                 update_doc["status"] = request.status.value
+                logger.info(f"Setting status: {request.status.value}")
+
+            logger.info(f"Final update_doc: {update_doc}")
 
             # Validate: start_time < end_time (if both present)
             existing = await self.get_fight_period(season_id, fight_number)

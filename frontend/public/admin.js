@@ -1758,26 +1758,34 @@ function showEditFightModal(seasonId, fightNumber, fight) {
 
         console.log('Form values:', { fightName, startTime, endTime, description });
 
-        // Convert datetime-local format to ISO format (add seconds if missing)
+        // Convert datetime-local format to ISO format
+        // IMPORTANT: Treat input as UTC time (don't convert through local timezone)
         const formatToISO = (datetimeLocal) => {
             if (!datetimeLocal) return null;
-            // If it doesn't have seconds, add :00
-            const withSeconds = datetimeLocal.includes(':00:00') ? datetimeLocal : datetimeLocal + ':00';
-            const isoDate = new Date(withSeconds).toISOString();
+            // datetime-local format: "2025-01-22T23:15"
+            // We want to treat this as UTC, so just add seconds and Z
+            const withSeconds = datetimeLocal.length === 16 ? datetimeLocal + ':00' : datetimeLocal;
+            const isoDate = withSeconds + 'Z'; // Add Z to indicate UTC
             console.log(`Converted ${datetimeLocal} -> ${isoDate}`);
             return isoDate;
         };
 
         const requestBody = {
             fight_name: fightName,
-            start_time: formatToISO(startTime),
-            description: description || null
+            start_time: formatToISO(startTime)
         };
+
+        // Only include description if provided
+        if (description) {
+            requestBody.description = description;
+        }
 
         // Only include end_time if provided
         if (endTime) {
             requestBody.end_time = formatToISO(endTime);
         }
+
+        console.log('Final request body:', JSON.stringify(requestBody, null, 2));
 
         console.log('Request body:', requestBody);
 
@@ -1883,21 +1891,27 @@ function setupCreateFightForm() {
             return;
         }
 
-        // Convert datetime-local format to ISO format (add seconds if missing)
+        // Convert datetime-local format to ISO format
+        // IMPORTANT: Treat input as UTC time (don't convert through local timezone)
         const formatToISO = (datetimeLocal) => {
             if (!datetimeLocal) return null;
-            // If it doesn't have seconds, add :00
-            const withSeconds = datetimeLocal.includes(':00:00') ? datetimeLocal : datetimeLocal + ':00';
-            return new Date(withSeconds).toISOString();
+            // datetime-local format: "2025-01-22T23:15"
+            // We want to treat this as UTC, so just add seconds and Z
+            const withSeconds = datetimeLocal.length === 16 ? datetimeLocal + ':00' : datetimeLocal;
+            return withSeconds + 'Z'; // Add Z to indicate UTC
         };
 
         const requestBody = {
             season_id: seasonData.season_id,
             fight_number: fightNumber,
             fight_name: fightName,
-            start_time: formatToISO(startTime),
-            description: description || null
+            start_time: formatToISO(startTime)
         };
+
+        // Only include description if provided
+        if (description) {
+            requestBody.description = description;
+        }
 
         // Only include end_time if provided
         if (endTime) {

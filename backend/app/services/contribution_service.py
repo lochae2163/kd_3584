@@ -28,7 +28,8 @@ class ContributionService:
     def calculate_player_contribution(
         self,
         player: Dict,
-        use_verified_deaths: bool = True
+        use_verified_deaths: bool = True,
+        use_fight_period_only: bool = True
     ) -> ContributionScore:
         """
         Calculate contribution score for a single player.
@@ -36,6 +37,7 @@ class ContributionService:
         Args:
             player: Player data dict with stats and optional verified_deaths
             use_verified_deaths: Whether to use verified death data if available
+            use_fight_period_only: Use only kills gained during fight periods (default True)
 
         Returns:
             ContributionScore with all calculations
@@ -44,9 +46,14 @@ class ContributionService:
         governor_id = player.get('governor_id', '')
         governor_name = player.get('governor_name', '')
 
-        # Kill scores (from gained/delta kills, not total kills)
-        t4_kills = delta.get('t4_kills', 0)
-        t5_kills = delta.get('t5_kills', 0)
+        # Kill scores - prefer fight period kills if available and enabled
+        if use_fight_period_only and 'fight_t4_kills' in player:
+            t4_kills = player.get('fight_t4_kills', 0)
+            t5_kills = player.get('fight_t5_kills', 0)
+        else:
+            # Fallback to total delta kills
+            t4_kills = delta.get('t4_kills', 0)
+            t5_kills = delta.get('t5_kills', 0)
 
         t4_kill_score = t4_kills * self.T4_KILL_WEIGHT
         t5_kill_score = t5_kills * self.T5_KILL_WEIGHT

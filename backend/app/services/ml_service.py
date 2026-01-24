@@ -710,8 +710,10 @@ class MLService:
 
             baseline_kp = baseline_player['stats']['kill_points'] if baseline_player else 0
 
-            # Calculate KP gained during each fight period
+            # Calculate stats gained during each fight period (KP, T4 kills, T5 kills)
             fight_kp_total = 0
+            fight_t4_kills_total = 0
+            fight_t5_kills_total = 0
             from datetime import timedelta
 
             for fight in fight_periods:
@@ -793,12 +795,29 @@ class MLService:
                     )
 
                     if before_player and after_player:
-                        before_kp = before_player.get('stats', {}).get('kill_points', 0)
-                        after_kp = after_player.get('stats', {}).get('kill_points', 0)
-                        fight_kp_delta = after_kp - before_kp
+                        before_stats = before_player.get('stats', {})
+                        after_stats = after_player.get('stats', {})
 
+                        # KP delta
+                        before_kp = before_stats.get('kill_points', 0)
+                        after_kp = after_stats.get('kill_points', 0)
+                        fight_kp_delta = after_kp - before_kp
                         if fight_kp_delta > 0:
                             fight_kp_total += fight_kp_delta
+
+                        # T4 kills delta
+                        before_t4 = before_stats.get('t4_kills', 0)
+                        after_t4 = after_stats.get('t4_kills', 0)
+                        fight_t4_delta = after_t4 - before_t4
+                        if fight_t4_delta > 0:
+                            fight_t4_kills_total += fight_t4_delta
+
+                        # T5 kills delta
+                        before_t5 = before_stats.get('t5_kills', 0)
+                        after_t5 = after_stats.get('t5_kills', 0)
+                        fight_t5_delta = after_t5 - before_t5
+                        if fight_t5_delta > 0:
+                            fight_t5_kills_total += fight_t5_delta
 
                 elif not before_upload and after_upload:
                     # No upload before fight, use baseline
@@ -809,18 +828,36 @@ class MLService:
                     )
 
                     if after_player:
-                        after_kp = after_player.get('stats', {}).get('kill_points', 0)
-                        fight_kp_delta = after_kp - baseline_kp
+                        after_stats = after_player.get('stats', {})
 
+                        # KP delta from baseline
+                        after_kp = after_stats.get('kill_points', 0)
+                        fight_kp_delta = after_kp - baseline_kp
                         if fight_kp_delta > 0:
                             fight_kp_total += fight_kp_delta
+
+                        # T4 kills delta from baseline
+                        baseline_t4 = baseline_player['stats'].get('t4_kills', 0) if baseline_player else 0
+                        after_t4 = after_stats.get('t4_kills', 0)
+                        fight_t4_delta = after_t4 - baseline_t4
+                        if fight_t4_delta > 0:
+                            fight_t4_kills_total += fight_t4_delta
+
+                        # T5 kills delta from baseline
+                        baseline_t5 = baseline_player['stats'].get('t5_kills', 0) if baseline_player else 0
+                        after_t5 = after_stats.get('t5_kills', 0)
+                        fight_t5_delta = after_t5 - baseline_t5
+                        if fight_t5_delta > 0:
+                            fight_t5_kills_total += fight_t5_delta
 
             # Calculate percentage of KP from fights
             fight_percentage = (fight_kp_total / total_kp_gained * 100) if total_kp_gained > 0 else 0.0
 
-            # Add to player dict (only expose fight KP, not trade KP to avoid negativity)
+            # Add fight stats to player dict
             player['fight_kp_gained'] = fight_kp_total
             player['fight_kp_percentage'] = round(fight_percentage, 1)
+            player['fight_t4_kills'] = fight_t4_kills_total
+            player['fight_t5_kills'] = fight_t5_kills_total
 
         return players
 

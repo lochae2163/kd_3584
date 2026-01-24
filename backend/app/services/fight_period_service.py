@@ -55,7 +55,15 @@ class FightPeriodService:
                 }
 
             # Validate: start_time < end_time (if end_time provided)
-            if request.end_time and request.start_time >= request.end_time:
+            # Normalize timezones for comparison
+            req_start = request.start_time
+            req_end = request.end_time
+            if req_start and req_end:
+                if req_start.tzinfo is not None and req_end.tzinfo is None:
+                    req_start = req_start.replace(tzinfo=None)
+                elif req_start.tzinfo is None and req_end.tzinfo is not None:
+                    req_end = req_end.replace(tzinfo=None)
+            if req_end and req_start >= req_end:
                 return {
                     "success": False,
                     "error": "start_time must be before end_time"
@@ -211,9 +219,6 @@ class FightPeriodService:
             if request.start_time is not None:
                 update_doc["start_time"] = request.start_time
                 logger.info(f"Setting start_time: {request.start_time}")
-            if request.end_time is not None:
-                update_doc["end_time"] = request.end_time
-                logger.info(f"Setting end_time: {request.end_time}")
             if request.description is not None:
                 update_doc["description"] = request.description
                 logger.info(f"Setting description: {request.description}")
@@ -221,9 +226,7 @@ class FightPeriodService:
                 update_doc["status"] = request.status.value
                 logger.info(f"Setting status: {request.status.value}")
 
-            logger.info(f"Final update_doc: {update_doc}")
-
-            # Validate: start_time < end_time (if both present)
+            # Get existing fight period first for validation
             existing = await self.get_fight_period(season_id, fight_number)
             if not existing:
                 return {
@@ -231,8 +234,37 @@ class FightPeriodService:
                     "error": f"Fight period not found: {season_id} - Fight {fight_number}"
                 }
 
+            # Handle end_time specially - allow clearing (setting to None)
+            # We check if end_time was explicitly included in the request
+            # by checking if the model field was set (even to None)
+            end_time_for_validation = existing.get("end_time")
+            if hasattr(request, 'end_time'):
+                if request.end_time is not None:
+                    # Setting a new end_time
+                    update_doc["end_time"] = request.end_time
+                    end_time_for_validation = request.end_time
+                    logger.info(f"Setting end_time: {request.end_time}")
+                else:
+                    # Explicitly clearing end_time (setting to None for ongoing fight)
+                    update_doc["end_time"] = None
+                    update_doc["status"] = FightPeriodStatus.ACTIVE.value
+                    end_time_for_validation = None
+                    logger.info("Clearing end_time (fight is ongoing)")
+
+            logger.info(f"Final update_doc: {update_doc}")
+
+            # Validate: start_time < end_time (if both present)
             start_time = request.start_time or existing.get("start_time")
-            end_time = request.end_time or existing.get("end_time")
+            end_time = end_time_for_validation
+
+            # Normalize timezones for comparison (make both naive or both aware)
+            if start_time and end_time:
+                # If one is aware and other is naive, make both naive for comparison
+                if start_time.tzinfo is not None and end_time.tzinfo is None:
+                    start_time = start_time.replace(tzinfo=None)
+                elif start_time.tzinfo is None and end_time.tzinfo is not None:
+                    end_time = end_time.replace(tzinfo=None)
+
             if start_time and end_time and start_time >= end_time:
                 return {
                     "success": False,
@@ -297,7 +329,14 @@ class FightPeriodService:
                 }
 
             # Validate end_time > start_time
-            if request.end_time <= existing["start_time"]:
+            # Normalize timezones for comparison
+            req_end = request.end_time
+            existing_start = existing["start_time"]
+            if req_end.tzinfo is not None and existing_start.tzinfo is None:
+                req_end = req_end.replace(tzinfo=None)
+            elif req_end.tzinfo is None and existing_start.tzinfo is not None:
+                existing_start = existing_start.replace(tzinfo=None)
+            if req_end <= existing_start:
                 return {
                     "success": False,
                     "error": "end_time must be after start_time"

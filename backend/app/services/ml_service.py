@@ -712,6 +712,7 @@ class MLService:
 
             # Calculate KP gained during each fight period
             fight_kp_total = 0
+            from datetime import timedelta
 
             for fight in fight_periods:
                 start_time = fight.get('start_time')
@@ -727,32 +728,52 @@ class MLService:
                 if isinstance(end_time, str):
                     end_time = datetime.fromisoformat(end_time)
 
-                # Find upload before fight start (closest before start_time)
-                before_upload = None
+                # Categorize uploads: before, during, and after the fight
+                uploads_before = []
+                uploads_during = []
+                uploads_after = []
+
                 for upload in all_uploads:
                     upload_time = upload.get('timestamp')
                     if isinstance(upload_time, str):
                         upload_time = datetime.fromisoformat(upload_time)
 
                     if upload_time <= start_time:
-                        before_upload = upload
+                        uploads_before.append((upload, upload_time))
+                    elif upload_time >= end_time:
+                        uploads_after.append((upload, upload_time))
                     else:
-                        break  # Uploads are sorted, so stop when we pass start_time
+                        uploads_during.append((upload, upload_time))
 
-                # Find upload after fight end (closest after end_time)
+                # Select best "before" upload
+                # Priority: closest upload before start, but if gap > 24 hours and we have
+                # uploads during the fight, use the first "during" upload instead
+                before_upload = None
+                if uploads_before:
+                    before_upload, before_time = uploads_before[-1]  # Last one before start
+                    gap = start_time - before_time
+                    # If gap is too large (>24 hours) and we have uploads during fight,
+                    # use first "during" upload as proxy for fight start state
+                    if gap > timedelta(hours=24) and uploads_during:
+                        before_upload, _ = uploads_during[0]
+                        logger.debug(f"Fight {fight.get('fight_number')}: Using first during-upload as before (gap was {gap})")
+                elif uploads_during:
+                    # No uploads before fight, use first during-upload
+                    before_upload, _ = uploads_during[0]
+                # else: before_upload stays None, will use baseline
+
+                # Select best "after" upload
+                # Priority: first upload after end, or last "during" upload if none after
                 after_upload = None
-                for upload in all_uploads:
-                    upload_time = upload.get('timestamp')
-                    if isinstance(upload_time, str):
-                        upload_time = datetime.fromisoformat(upload_time)
-
-                    if upload_time >= end_time:
-                        after_upload = upload
-                        break  # Found the first upload after end_time
+                if uploads_after:
+                    after_upload, _ = uploads_after[0]  # First one after end
+                elif uploads_during:
+                    # No upload after fight, use last during-upload
+                    after_upload, _ = uploads_during[-1]
+                    logger.debug(f"Fight {fight.get('fight_number')}: Using last during-upload as after")
 
                 # Calculate KP delta for this fight
                 if before_upload and after_upload:
-                    # Find player in both uploads
                     before_players = before_upload.get('players', [])
                     after_players = after_upload.get('players', [])
 
@@ -770,7 +791,6 @@ class MLService:
                         after_kp = after_player.get('stats', {}).get('kill_points', 0)
                         fight_kp_delta = after_kp - before_kp
 
-                        # Only add positive deltas (KP should only increase)
                         if fight_kp_delta > 0:
                             fight_kp_total += fight_kp_delta
 

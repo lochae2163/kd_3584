@@ -1780,10 +1780,9 @@ function showEditFightModal(seasonId, fightNumber, fight) {
             requestBody.description = description;
         }
 
-        // Only include end_time if provided
-        if (endTime) {
-            requestBody.end_time = formatToISO(endTime);
-        }
+        // Always include end_time - either the value or null to clear it
+        // This allows clearing end_time for ongoing fights
+        requestBody.end_time = endTime ? formatToISO(endTime) : null;
 
         console.log('Final request body:', JSON.stringify(requestBody, null, 2));
 

@@ -72,10 +72,18 @@ function formatDeltaNumber(num) {
  * Format date string to UTC format
  * Example: "2024-01-15T10:30:00" -> "01/15/2024, 10:30:00 UTC"
  * Used in: admin.js, script.js
+ *
+ * Note: Database stores timestamps as naive datetimes in UTC.
+ * We must append 'Z' to tell JavaScript to parse as UTC, not local time.
  */
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
+    // Ensure the date is parsed as UTC by appending 'Z' if not present
+    let utcString = dateString;
+    if (!dateString.endsWith('Z') && !dateString.includes('+') && !dateString.includes('-', 10)) {
+        utcString = dateString + 'Z';
+    }
+    const date = new Date(utcString);
     return date.toLocaleString('en-US', {
         timeZone: 'UTC',
         year: 'numeric',

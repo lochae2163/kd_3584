@@ -717,15 +717,12 @@ class MLService:
             for fight in fight_periods:
                 start_time = fight.get('start_time')
                 end_time = fight.get('end_time')
-
-                # Skip if fight hasn't ended yet
-                if not end_time:
-                    continue
+                is_ongoing = end_time is None
 
                 # Convert datetime strings to datetime objects if needed
                 if isinstance(start_time, str):
                     start_time = datetime.fromisoformat(start_time)
-                if isinstance(end_time, str):
+                if end_time and isinstance(end_time, str):
                     end_time = datetime.fromisoformat(end_time)
 
                 # Categorize uploads: before, during, and after the fight
@@ -740,6 +737,9 @@ class MLService:
 
                     if upload_time <= start_time:
                         uploads_before.append((upload, upload_time))
+                    elif is_ongoing:
+                        # For ongoing fights, all uploads after start are "during"
+                        uploads_during.append((upload, upload_time))
                     elif upload_time >= end_time:
                         uploads_after.append((upload, upload_time))
                     else:
@@ -763,9 +763,15 @@ class MLService:
                 # else: before_upload stays None, will use baseline
 
                 # Select best "after" upload
-                # Priority: first upload after end, or last "during" upload if none after
+                # For ongoing fights: use the latest upload available
+                # For completed fights: first upload after end, or last "during" upload
                 after_upload = None
-                if uploads_after:
+                if is_ongoing:
+                    # For ongoing fights, use the most recent upload as "after"
+                    if uploads_during:
+                        after_upload, _ = uploads_during[-1]  # Latest during fight
+                        logger.debug(f"Fight {fight.get('fight_number')}: Ongoing fight, using latest upload as after")
+                elif uploads_after:
                     after_upload, _ = uploads_after[0]  # First one after end
                 elif uploads_during:
                     # No upload after fight, use last during-upload

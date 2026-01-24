@@ -1130,7 +1130,7 @@ async function loadVerificationStatus() {
     const statusDiv = document.getElementById('verification-status');
 
     try {
-        const response = await fetch(`${API_URL}/admin/verified-deaths/status/${activeSeason}`);
+        const response = await fetch(`${API_URL}/admin/verified-deaths/status/${activeSeason.season_id}`);
         const data = await response.json();
 
         if (data.success) {

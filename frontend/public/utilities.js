@@ -14,7 +14,7 @@
  */
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:8000'
-    : 'https://kd3584-production.up.railway.app';
+    : 'https://kd-3584.onrender.com';
 
 // ========================================
 // Number Formatting Functions

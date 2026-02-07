@@ -108,9 +108,17 @@ async def upload_verified_deaths(
                 t5_deaths = int(row['t5_deaths'])
                 notes = str(row.get('notes', '')).strip() if pd.notna(row.get('notes')) else None
 
-                # Skip players with 0/0 deaths - not verified
+                # Players with 0/0 deaths are not verified - remove any previous verification
                 if t4_deaths == 0 and t5_deaths == 0:
                     results['skipped_count'] = results.get('skipped_count', 0) + 1
+                    # Unverify if previously marked verified
+                    if gov_id in existing_players and existing_players[gov_id].get('verified_deaths', {}).get('verified', False):
+                        await current_col.update_one(
+                            {"kvk_season_id": kvk_season_id, "players.governor_id": gov_id},
+                            {"$unset": {"players.$[player].verified_deaths": ""}},
+                            array_filters=[{"player.governor_id": gov_id}]
+                        )
+                        results['unverified_count'] = results.get('unverified_count', 0) + 1
                     continue
 
                 # Validate player exists
@@ -171,7 +179,7 @@ async def upload_verified_deaths(
 
         return {
             "success": True,
-            "message": f"Processed {results['total_rows']} rows: {results['success_count']} updated, {results.get('skipped_count', 0)} skipped (0/0 deaths), {results['not_found_count']} not found, {results['error_count']} errors",
+            "message": f"Processed {results['total_rows']} rows: {results['success_count']} updated, {results.get('skipped_count', 0)} skipped (0/0 deaths), {results.get('unverified_count', 0)} unverified, {results['not_found_count']} not found, {results['error_count']} errors",
             "kvk_season_id": kvk_season_id,
             "file_name": file.filename,
             "results": results,

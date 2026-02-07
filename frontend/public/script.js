@@ -25,17 +25,17 @@ const searchInput = document.getElementById('search');
 const sortSelect = document.getElementById('sort-by');
 
 // ========================================
-// Column Definitions
+// Column Definitions (translation keys)
 // ========================================
 const COLUMNS = {
-    'kill_points_gained': { label: 'Kill Points Gained', isGained: true, field: 'kill_points' },
-    'fight_kp_gained': { label: 'Fight KP', isGained: true, field: 'fight_kp_gained', isFightKP: true },
-    'deads_gained': { label: 'Deaths Gained', isGained: true, field: 'deads' },
-    'power': { label: 'Power', isGained: false, field: 'power' },
-    'kill_points': { label: 'Kill Points', isGained: false, field: 'kill_points' },
-    't5_kills': { label: 'T5 Kills', isGained: false, field: 't5_kills' },
-    't4_kills': { label: 'T4 Kills', isGained: false, field: 't4_kills' },
-    'deads': { label: 'Deaths', isGained: false, field: 'deads' }
+    'kill_points_gained': { labelKey: 'dashboard.kpGained', isGained: true, field: 'kill_points' },
+    'fight_kp_gained': { labelKey: 'dashboard.fightKP', isGained: true, field: 'fight_kp_gained', isFightKP: true },
+    'deads_gained': { labelKey: 'dashboard.deathsGained', isGained: true, field: 'deads' },
+    'power': { labelKey: 'common.power', isGained: false, field: 'power' },
+    'kill_points': { labelKey: 'common.killPoints', isGained: false, field: 'kill_points' },
+    't5_kills': { labelKey: 'common.t5Kills', isGained: false, field: 't5_kills' },
+    't4_kills': { labelKey: 'common.t4Kills', isGained: false, field: 't4_kills' },
+    'deads': { labelKey: 'common.deaths', isGained: false, field: 'deads' }
 };
 
 /**
@@ -50,14 +50,13 @@ function getOrderedColumns(sortBy) {
 // ========================================
 // Utility Functions
 // ========================================
-// Number formatting functions (formatFullNumber, formatShortNumber, formatDeltaNumber) moved to utilities.js
 
 /**
  * Create stat cell HTML with delta badge above
  */
 function createStatCell(value, delta) {
     const formattedValue = formatFullNumber(value);
-    
+
     // If no delta or delta is 0, just show the value
     if (!delta || delta === 0) {
         return `
@@ -66,14 +65,14 @@ function createStatCell(value, delta) {
             </div>
         `;
     }
-    
+
     // Determine delta type
     const isPositive = delta > 0;
     const deltaClass = isPositive ? 'positive' : 'negative';
     const arrowClass = isPositive ? 'arrow-up' : 'arrow-down';
     const prefix = isPositive ? '+' : '-';
     const formattedDelta = formatDeltaNumber(delta);
-    
+
     return `
         <div class="stat-cell">
             <span class="delta-badge ${deltaClass}">
@@ -85,80 +84,75 @@ function createStatCell(value, delta) {
     `;
 }
 
-/**
- * Format date for display in UTC
- * (Now defined in utilities.js)
- */
-
 // ========================================
 // Load Stats Summary
 // ========================================
 async function loadStats() {
-    statsGrid.innerHTML = '<div class="loading">Loading stats...</div>';
-    
+    statsGrid.innerHTML = `<div class="loading">${t('dashboard.loadingStats')}</div>`;
+
     try {
         const response = await fetch(`${API_URL}/api/stats/summary?kvk_season_id=${KVK_SEASON_ID}`);
-        
+
         if (!response.ok) throw new Error('Failed to fetch stats');
-        
+
         const data = await response.json();
         const summary = data.summary || {};
         const totals = summary.totals || {};
         const tops = summary.top_players || {};
-        
+
         statsGrid.innerHTML = `
             <div class="stat-card">
-                <div class="label">👥 Total Players</div>
+                <div class="label">${t('dashboard.totalPlayers')}</div>
                 <div class="value">${data.player_count || 0}</div>
             </div>
             <div class="stat-card">
-                <div class="label">⚔️ Total Kill Points</div>
+                <div class="label">${t('dashboard.totalKillPoints')}</div>
                 <div class="value">${formatShortNumber(totals.kill_points)}</div>
             </div>
             <div class="stat-card">
-                <div class="label">💪 Total Power</div>
+                <div class="label">${t('dashboard.totalPower')}</div>
                 <div class="value">${formatShortNumber(totals.power)}</div>
             </div>
             <div class="stat-card">
-                <div class="label">🎯 Total T5 Kills</div>
+                <div class="label">${t('dashboard.totalT5Kills')}</div>
                 <div class="value">${formatShortNumber(totals.t5_kills)}</div>
             </div>
         `;
-        
+
         if (Object.keys(tops).length > 0) {
             topPlayers.innerHTML = `
                 <div class="top-card">
-                    <div class="title">🏆 Kill Points Gained</div>
+                    <div class="title">${t('dashboard.topKPGained')}</div>
                     <div class="name">${tops.kill_points?.name || 'N/A'}</div>
                     <div class="stat">${formatShortNumber(tops.kill_points?.value)}</div>
                 </div>
                 <div class="top-card purple">
-                    <div class="title">⚔️ T5 Kills Gained</div>
+                    <div class="title">${t('dashboard.topT5Gained')}</div>
                     <div class="name">${tops.t5_kills?.name || 'N/A'}</div>
                     <div class="stat">${formatShortNumber(tops.t5_kills?.value)}</div>
                 </div>
                 <div class="top-card green">
-                    <div class="title">🎖️ T4 Kills Gained</div>
+                    <div class="title">${t('dashboard.topT4Gained')}</div>
                     <div class="name">${tops.t4_kills?.name || 'N/A'}</div>
                     <div class="stat">${formatShortNumber(tops.t4_kills?.value)}</div>
                 </div>
                 <div class="top-card red">
-                    <div class="title">💀 Deaths Gained</div>
+                    <div class="title">${t('dashboard.topDeathsGained')}</div>
                     <div class="name">${tops.deads?.name || 'N/A'}</div>
                     <div class="stat">${formatShortNumber(tops.deads?.value)}</div>
                 </div>
             `;
         }
-        
+
         // Update snapshot info
         snapshotInfo.innerHTML = `
-            <p><strong>Baseline:</strong> ${formatDate(data.baseline_date)}</p>
-            <p><strong>Last Updated:</strong> ${formatDate(data.current_date)}</p>
+            <p><strong>${t('dashboard.baseline')}:</strong> ${formatDate(data.baseline_date)}</p>
+            <p><strong>${t('dashboard.lastUpdated')}:</strong> ${formatDate(data.current_date)}</p>
         `;
-        
+
     } catch (error) {
         console.error('Failed to load stats:', error);
-        statsGrid.innerHTML = '<div class="loading">⚠️ No data available. Admin needs to upload baseline first.</div>';
+        statsGrid.innerHTML = `<div class="loading">${t('dashboard.noBaseline')}</div>`;
     }
 }
 
@@ -167,7 +161,7 @@ async function loadStats() {
 // ========================================
 async function loadLeaderboard(sortBy = 'kill_points_gained') {
     currentSortBy = sortBy;
-    leaderboardBody.innerHTML = '<tr><td colspan="9" class="loading">Loading leaderboard...</td></tr>';
+    leaderboardBody.innerHTML = `<tr><td colspan="9" class="loading">${t('dashboard.loadingLeaderboard')}</td></tr>`;
 
     try {
         const response = await fetch(
@@ -179,13 +173,13 @@ async function loadLeaderboard(sortBy = 'kill_points_gained') {
         const data = await response.json();
         allPlayers = data.leaderboard || [];
 
-        playerCount.textContent = `${allPlayers.length} players`;
+        playerCount.textContent = t('dashboard.playerCount', { count: allPlayers.length });
         renderLeaderboard(allPlayers);
         updateTableHeaders(sortBy);
 
     } catch (error) {
         console.error('Failed to load leaderboard:', error);
-        leaderboardBody.innerHTML = '<tr><td colspan="9" class="loading">⚠️ No data available</td></tr>';
+        leaderboardBody.innerHTML = `<tr><td colspan="9" class="loading">${t('common.noDataAvailable')}</td></tr>`;
     }
 }
 
@@ -198,13 +192,13 @@ function updateTableHeaders(sortBy) {
 
     // Build header HTML
     const headersHTML = `
-        <th>Rank</th>
-        <th>Governor</th>
+        <th>${t('common.rank')}</th>
+        <th>${t('common.governor')}</th>
         ${orderedColumns.map(colKey => {
             const col = COLUMNS[colKey];
             const isSorted = colKey === sortBy;
             const sortIndicator = isSorted ? ' 🔽' : '';
-            return `<th class="text-right ${isSorted ? 'sorted-column' : ''}">${col.label}${sortIndicator}</th>`;
+            return `<th class="text-right ${isSorted ? 'sorted-column' : ''}">${t(col.labelKey)}${sortIndicator}</th>`;
         }).join('')}
     `;
 
@@ -256,7 +250,7 @@ function renderLeaderboard(players) {
             <tr>
                 <td colspan="9" class="empty-state">
                     <div class="icon">📊</div>
-                    <p>No data available</p>
+                    <p>${t('common.noDataAvailable')}</p>
                 </td>
             </tr>
         `;
@@ -341,7 +335,7 @@ function updatePaginationControls(totalPages) {
     const nextBtn = document.getElementById('next-page');
     const lastBtn = document.getElementById('last-page');
 
-    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    pageInfo.textContent = t('dashboard.pageOf', { current: currentPage, total: totalPages });
 
     // Disable/enable buttons
     firstBtn.disabled = currentPage === 1;
@@ -417,16 +411,30 @@ async function initializeApp() {
             await loadLeaderboard();
         } else {
             console.error('No active season found');
-            statsGrid.innerHTML = '<div class="loading">⚠️ No active season configured</div>';
+            statsGrid.innerHTML = `<div class="loading">${t('dashboard.noActiveSeason')}</div>`;
         }
     } catch (error) {
         console.error('Failed to fetch active season:', error);
-        statsGrid.innerHTML = '<div class="loading">⚠️ Failed to load season information</div>';
+        statsGrid.innerHTML = `<div class="loading">${t('dashboard.failedLoadSeason')}</div>`;
     }
 }
 
+// Language change handler - re-render dynamic content
+window.addEventListener('languageChanged', () => {
+    if (allPlayers.length > 0) {
+        updateTableHeaders(currentSortBy);
+        renderLeaderboard(filteredPlayers);
+        playerCount.textContent = t('dashboard.playerCount', { count: allPlayers.length });
+    }
+    if (KVK_SEASON_ID) {
+        loadStats();
+    }
+});
+
 // Pagination button listeners
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await I18n.init();
+
     document.getElementById('first-page').addEventListener('click', () => goToPage(1));
     document.getElementById('prev-page').addEventListener('click', () => goToPage(currentPage - 1));
     document.getElementById('next-page').addEventListener('click', () => goToPage(currentPage + 1));

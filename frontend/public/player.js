@@ -3,6 +3,11 @@
 // ========================================
 // API_URL and utility functions are now in utilities.js
 let KVK_SEASON_ID = null;
+let cachedPlayerData = null;
+let killsChart = null;
+let deltaChart = null;
+let timelineChart = null;
+let cachedTimelineData = null;
 
 // ========================================
 // Get Player ID from URL
@@ -24,12 +29,6 @@ const statsCards = document.getElementById('stats-cards');
 const deltaGrid = document.getElementById('delta-grid');
 
 // ========================================
-// Utility Functions
-// ========================================
-// All utility functions (formatFullNumber, formatShortNumber, getDeltaClass,
-// getDeltaArrow, getDeltaPrefix) moved to utilities.js
-
-// ========================================
 // Load Player Data
 // ========================================
 async function loadPlayerData() {
@@ -37,28 +36,29 @@ async function loadPlayerData() {
         const response = await fetch(
             `${API_URL}/api/player/${governorId}?kvk_season_id=${KVK_SEASON_ID}`
         );
-        
+
         if (!response.ok) {
             throw new Error('Player not found');
         }
-        
+
         const data = await response.json();
         const player = data.player;
-        
+
         if (!player) {
             throw new Error('Player data not found');
         }
-        
+
+        cachedPlayerData = player;
         renderPlayerData(player);
         renderCharts(player);
-        
+
     } catch (error) {
         console.error('Failed to load player:', error);
         statsCards.innerHTML = `
             <div class="error-message">
-                <h3>❌ Player Not Found</h3>
-                <p>Could not find player with ID: ${governorId}</p>
-                <a href="dashboard.html" class="back-btn">← Back to Leaderboard</a>
+                <h3>${t('player.notFound')}</h3>
+                <p>${t('player.couldNotFind', { id: governorId })}</p>
+                <a href="dashboard.html" class="back-btn">${t('common.backToLeaderboard')}</a>
             </div>
         `;
     }
@@ -70,11 +70,11 @@ async function loadPlayerData() {
 function renderPlayerData(player) {
     const stats = player.stats || {};
     const delta = player.delta || {};
-    
+
     // Header
     playerName.textContent = `🎮 ${player.governor_name}`;
-    playerId.textContent = `Governor ID: ${player.governor_id}`;
-    
+    playerId.textContent = `${t('common.governorId')}: ${player.governor_id}`;
+
     // Rank Badge
     let rankBadge = '';
     if (player.rank === 1) {
@@ -84,19 +84,19 @@ function renderPlayerData(player) {
     } else if (player.rank === 3) {
         rankBadge = '<div class="rank-badge-large bronze">🥉 #3</div>';
     } else if (player.rank) {
-        rankBadge = `<div class="rank-badge-large">Rank #${player.rank}</div>`;
+        rankBadge = `<div class="rank-badge-large">${t('player.rankLabel')} #${player.rank}</div>`;
     }
     rankSection.innerHTML = rankBadge;
-    
+
     // Stats Cards
     const statsData = [
-        { label: 'Power', icon: '💪', value: stats.power, delta: delta.power, color: 'blue' },
-        { label: 'Kill Points', icon: '⚔️', value: stats.kill_points, delta: delta.kill_points, color: 'green' },
-        { label: 'T5 Kills', icon: '🎯', value: stats.t5_kills, delta: delta.t5_kills, color: 'purple' },
-        { label: 'T4 Kills', icon: '🏹', value: stats.t4_kills, delta: delta.t4_kills, color: 'orange' },
-        { label: 'Deaths', icon: '💀', value: stats.deads, delta: delta.deads, color: 'red' }
+        { label: t('common.power'), icon: '💪', value: stats.power, delta: delta.power, color: 'blue' },
+        { label: t('common.killPoints'), icon: '⚔️', value: stats.kill_points, delta: delta.kill_points, color: 'green' },
+        { label: t('common.t5Kills'), icon: '🎯', value: stats.t5_kills, delta: delta.t5_kills, color: 'purple' },
+        { label: t('common.t4Kills'), icon: '🏹', value: stats.t4_kills, delta: delta.t4_kills, color: 'orange' },
+        { label: t('common.deaths'), icon: '💀', value: stats.deads, delta: delta.deads, color: 'red' }
     ];
-    
+
     statsCards.innerHTML = statsData.map(stat => `
         <div class="player-stat-card ${stat.color}">
             <div class="stat-icon">${stat.icon}</div>
@@ -107,20 +107,20 @@ function renderPlayerData(player) {
                     <div class="stat-delta ${getDeltaClass(stat.delta)}">
                         ${getDeltaArrow(stat.delta)} ${getDeltaPrefix(stat.delta)}${formatFullNumber(Math.abs(stat.delta))}
                     </div>
-                ` : '<div class="stat-delta neutral">No change</div>'}
+                ` : `<div class="stat-delta neutral">${t('common.noChange')}</div>`}
             </div>
         </div>
     `).join('');
-    
+
     // Delta Summary
     const deltaData = [
-        { label: 'T5 Kills', icon: '🎯', value: delta.t5_kills },
-        { label: 'T4 Kills', icon: '🏹', value: delta.t4_kills },
-        { label: 'Deaths', icon: '💀', value: delta.deads },
-        { label: 'Kill Points', icon: '⚔️', value: delta.kill_points },
-        { label: 'Power', icon: '💪', value: delta.power }
+        { label: t('common.t5Kills'), icon: '🎯', value: delta.t5_kills },
+        { label: t('common.t4Kills'), icon: '🏹', value: delta.t4_kills },
+        { label: t('common.deaths'), icon: '💀', value: delta.deads },
+        { label: t('common.killPoints'), icon: '⚔️', value: delta.kill_points },
+        { label: t('common.power'), icon: '💪', value: delta.power }
     ];
-    
+
     deltaGrid.innerHTML = deltaData.map(stat => `
         <div class="delta-card ${getDeltaClass(stat.value)}">
             <div class="delta-icon">${stat.icon}</div>
@@ -138,11 +138,8 @@ function renderPlayerData(player) {
 function renderCharts(player) {
     const stats = player.stats || {};
     const delta = player.delta || {};
-    
-    // Chart 1: T5 vs T4 Kills (Donut)
+
     renderKillsDonutChart(stats);
-    
-    // Chart 2: KvK Contribution Delta (Bar)
     renderDeltaBarChart(delta);
 }
 
@@ -150,19 +147,21 @@ function renderCharts(player) {
 // Chart 1: T5 vs T4 Kills Distribution
 // ========================================
 function renderKillsDonutChart(stats) {
-    const ctx = document.getElementById('kills-chart').getContext('2d');
-    
+    const canvas = document.getElementById('kills-chart');
+    if (killsChart) { killsChart.destroy(); killsChart = null; }
+
+    const ctx = canvas.getContext('2d');
     const t5Kills = stats.t5_kills || 0;
     const t4Kills = stats.t4_kills || 0;
     const total = t5Kills + t4Kills;
-    
+
     const t5Percent = total > 0 ? ((t5Kills / total) * 100).toFixed(1) : 0;
     const t4Percent = total > 0 ? ((t4Kills / total) * 100).toFixed(1) : 0;
-    
-    new Chart(ctx, {
+
+    killsChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: [`T5 Kills (${t5Percent}%)`, `T4 Kills (${t4Percent}%)`],
+            labels: [`${t('common.t5Kills')} (${t5Percent}%)`, `${t('common.t4Kills')} (${t4Percent}%)`],
             datasets: [{
                 data: [t5Kills, t4Kills],
                 backgroundColor: [
@@ -192,7 +191,7 @@ function renderKillsDonutChart(stats) {
                 },
                 title: {
                     display: true,
-                    text: 'T5 vs T4 Kill Distribution',
+                    text: t('player.t5vsT4'),
                     color: '#ffffff',
                     font: { size: 16, weight: 'bold' },
                     padding: { bottom: 15 }
@@ -200,7 +199,7 @@ function renderKillsDonutChart(stats) {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `${formatFullNumber(context.raw)} kills`;
+                            return `${formatFullNumber(context.raw)} ${t('player.kills')}`;
                         }
                     }
                 }
@@ -213,17 +212,18 @@ function renderKillsDonutChart(stats) {
 // Chart 2: KvK Contribution Delta (Horizontal Bar)
 // ========================================
 function renderDeltaBarChart(delta) {
-    const ctx = document.getElementById('delta-chart').getContext('2d');
-    
+    const canvas = document.getElementById('delta-chart');
+    if (deltaChart) { deltaChart.destroy(); deltaChart = null; }
+
+    const ctx = canvas.getContext('2d');
     const data = [
-        { label: 'T5 Kills', value: delta.t5_kills || 0 },
-        { label: 'T4 Kills', value: delta.t4_kills || 0 },
-        { label: 'Deaths', value: delta.deads || 0 }
+        { label: t('common.t5Kills'), value: delta.t5_kills || 0 },
+        { label: t('common.t4Kills'), value: delta.t4_kills || 0 },
+        { label: t('common.deaths'), value: delta.deads || 0 }
     ];
-    
-    const colors = data.map(d => {
-        // For deaths, positive is bad (red), negative is good (green)
-        if (d.label === 'Deaths') {
+
+    const colors = data.map((d, i) => {
+        if (i === 2) { // Deaths
             if (d.value > 0) return 'rgba(239, 68, 68, 0.85)';
             if (d.value < 0) return 'rgba(34, 197, 94, 0.85)';
         } else {
@@ -232,9 +232,9 @@ function renderDeltaBarChart(delta) {
         }
         return 'rgba(100, 116, 139, 0.85)';
     });
-    
-    const borderColors = data.map(d => {
-        if (d.label === 'Deaths') {
+
+    const borderColors = data.map((d, i) => {
+        if (i === 2) {
             if (d.value > 0) return 'rgba(239, 68, 68, 1)';
             if (d.value < 0) return 'rgba(34, 197, 94, 1)';
         } else {
@@ -243,13 +243,13 @@ function renderDeltaBarChart(delta) {
         }
         return 'rgba(100, 116, 139, 1)';
     });
-    
-    new Chart(ctx, {
+
+    deltaChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: data.map(d => d.label),
             datasets: [{
-                label: 'Change from Baseline',
+                label: t('player.changeFromBaseline'),
                 data: data.map(d => d.value),
                 backgroundColor: colors,
                 borderColor: borderColors,
@@ -265,7 +265,7 @@ function renderDeltaBarChart(delta) {
                 legend: { display: false },
                 title: {
                     display: true,
-                    text: 'KvK Contribution (Change from Baseline)',
+                    text: t('player.kvkContribution'),
                     color: '#ffffff',
                     font: { size: 16, weight: 'bold' },
                     padding: { bottom: 15 }
@@ -292,7 +292,7 @@ function renderDeltaBarChart(delta) {
                     grid: { color: 'rgba(148, 163, 184, 0.1)' }
                 },
                 y: {
-                    ticks: { 
+                    ticks: {
                         color: '#e2e8f0',
                         font: { size: 13, weight: '500' }
                     },
@@ -322,9 +322,8 @@ async function loadPlayerTimeline() {
             return;
         }
 
-        // Show the timeline section
+        cachedTimelineData = data;
         document.getElementById('timeline-section').style.display = 'block';
-
         renderTimelineChart(data);
         renderTimelineSnapshots(data);
 
@@ -335,25 +334,28 @@ async function loadPlayerTimeline() {
 
 function renderTimelineChart(data) {
     const timeline = data.timeline;
-    const ctx = document.getElementById('timeline-chart').getContext('2d');
+    const canvas = document.getElementById('timeline-chart');
+    if (timelineChart) { timelineChart.destroy(); timelineChart = null; }
 
-    // Extract data for chart
+    const ctx = canvas.getContext('2d');
+    const locale = I18n.getLang() === 'ja' ? 'ja-JP' : 'en-US';
+
     const labels = timeline.map(snapshot => {
         const date = new Date(snapshot.timestamp);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
     });
 
     const kpData = timeline.map(snapshot => snapshot.stats.kill_points);
     const powerData = timeline.map(snapshot => snapshot.stats.power);
     const rankData = timeline.map(snapshot => snapshot.rank);
 
-    new Chart(ctx, {
+    timelineChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [
                 {
-                    label: 'Kill Points',
+                    label: t('common.killPoints'),
                     data: kpData,
                     borderColor: 'rgba(255, 99, 132, 1)',
                     backgroundColor: 'rgba(255, 99, 132, 0.1)',
@@ -362,7 +364,7 @@ function renderTimelineChart(data) {
                     fill: true
                 },
                 {
-                    label: 'Power',
+                    label: t('common.power'),
                     data: powerData,
                     borderColor: 'rgba(54, 162, 235, 1)',
                     backgroundColor: 'rgba(54, 162, 235, 0.1)',
@@ -371,7 +373,7 @@ function renderTimelineChart(data) {
                     fill: true
                 },
                 {
-                    label: 'Rank',
+                    label: t('player.rankLabel'),
                     data: rankData,
                     borderColor: 'rgba(255, 206, 86, 1)',
                     backgroundColor: 'rgba(255, 206, 86, 0.1)',
@@ -394,19 +396,15 @@ function renderTimelineChart(data) {
                     position: 'top',
                     labels: {
                         color: '#e8eaed',
-                        font: {
-                            size: 12
-                        }
+                        font: { size: 12 }
                     }
                 },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
                             let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            if (context.dataset.label === 'Rank') {
+                            if (label) label += ': ';
+                            if (context.dataset.label === t('player.rankLabel')) {
                                 label += '#' + context.parsed.y;
                             } else {
                                 label += formatShortNumber(context.parsed.y);
@@ -427,32 +425,24 @@ function renderTimelineChart(data) {
                             return formatShortNumber(value);
                         }
                     },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
                 },
                 y1: {
                     type: 'linear',
                     display: true,
                     position: 'right',
-                    reverse: true, // Lower rank number is better
+                    reverse: true,
                     ticks: {
                         color: '#e8eaed',
                         callback: function(value) {
                             return '#' + value;
                         }
                     },
-                    grid: {
-                        drawOnChartArea: false
-                    }
+                    grid: { drawOnChartArea: false }
                 },
                 x: {
-                    ticks: {
-                        color: '#e8eaed'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
+                    ticks: { color: '#e8eaed' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
                 }
             }
         }
@@ -462,12 +452,13 @@ function renderTimelineChart(data) {
 function renderTimelineSnapshots(data) {
     const timeline = data.timeline;
     const snapshotsContainer = document.getElementById('timeline-snapshots');
+    const locale = I18n.getLang() === 'ja' ? 'ja-JP' : 'en-US';
 
     let html = '<div class="snapshots-grid">';
 
     timeline.forEach((snapshot, index) => {
         const date = new Date(snapshot.timestamp);
-        const dateStr = date.toLocaleDateString('en-US', {
+        const dateStr = date.toLocaleDateString(locale, {
             month: 'short',
             day: 'numeric',
             year: 'numeric',
@@ -483,18 +474,18 @@ function renderTimelineSnapshots(data) {
             <div class="snapshot-card">
                 <div class="snapshot-header">
                     <span class="snapshot-number">#${index + 1}</span>
-                    <span class="snapshot-rank">Rank #${snapshot.rank}</span>
+                    <span class="snapshot-rank">${t('player.rankLabel')} #${snapshot.rank}</span>
                 </div>
                 <div class="snapshot-date">${dateStr}</div>
-                <div class="snapshot-description">${snapshot.description || 'No description'}</div>
+                <div class="snapshot-description">${snapshot.description || t('player.noDescription')}</div>
                 <div class="snapshot-stats">
                     <div class="snapshot-stat">
-                        <span class="stat-label">KP</span>
+                        <span class="stat-label">${t('player.kp')}</span>
                         <span class="stat-value">${formatShortNumber(snapshot.stats.kill_points)}</span>
                         <span class="stat-delta ${deltaClass}">${deltaPrefix}${formatShortNumber(kpDelta)}</span>
                     </div>
                     <div class="snapshot-stat">
-                        <span class="stat-label">Power</span>
+                        <span class="stat-label">${t('common.power')}</span>
                         <span class="stat-value">${formatShortNumber(snapshot.stats.power)}</span>
                     </div>
                 </div>
@@ -507,30 +498,43 @@ function renderTimelineSnapshots(data) {
 }
 
 // ========================================
+// Language change handler
+// ========================================
+window.addEventListener('languageChanged', () => {
+    if (cachedPlayerData) {
+        renderPlayerData(cachedPlayerData);
+        renderCharts(cachedPlayerData);
+    }
+    if (cachedTimelineData) {
+        renderTimelineChart(cachedTimelineData);
+        renderTimelineSnapshots(cachedTimelineData);
+    }
+});
+
+// ========================================
 // Initialize
 // ========================================
 async function initializeApp() {
     try {
-        // Fetch active season from public API endpoint
         const response = await fetch(`${API_URL}/api/seasons/active`);
         const data = await response.json();
 
         if (data.success && (data.season || data.season_id)) {
-            // Handle both response formats
             KVK_SEASON_ID = data.season ? data.season.season_id : data.season_id;
             await loadPlayerData();
             await loadPlayerTimeline();
         } else {
-            playerName.textContent = 'Error: No active season';
-            statsCards.innerHTML = '<div class="error">No active season found. Please activate a season in the admin panel.</div>';
+            playerName.textContent = t('player.noActiveSeason');
+            statsCards.innerHTML = `<div class="error">${t('player.noActiveSeasonDesc')}</div>`;
         }
     } catch (error) {
         console.error('Failed to fetch active season:', error);
-        playerName.textContent = 'Error loading season';
-        statsCards.innerHTML = '<div class="error">Failed to load active season.</div>';
+        playerName.textContent = t('player.errorLoadingSeason');
+        statsCards.innerHTML = `<div class="error">${t('player.failedLoadSeason')}</div>`;
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await I18n.init();
     initializeApp();
 });

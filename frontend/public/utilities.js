@@ -84,7 +84,8 @@ function formatDate(dateString) {
         utcString = dateString + 'Z';
     }
     const date = new Date(utcString);
-    return date.toLocaleString('en-US', {
+    const locale = (typeof I18n !== 'undefined' && I18n.getLang() === 'ja') ? 'ja-JP' : 'en-US';
+    return date.toLocaleString(locale, {
         timeZone: 'UTC',
         year: 'numeric',
         month: '2-digit',

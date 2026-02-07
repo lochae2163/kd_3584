@@ -10,10 +10,14 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>🏰 Kingdom 3584</h1>
-            <p>Rise of Kingdoms • KvK Stats Tracker</p>
+            <div class="lang-switcher" id="lang-switcher">
+                <button class="lang-btn" data-lang="en" title="English">EN</button>
+                <button class="lang-btn" data-lang="ja" title="日本語">JA</button>
+            </div>
+            <h1 data-i18n-html="dashboard.title">🏰 Kingdom 3584</h1>
+            <p data-i18n="dashboard.subtitle">Rise of Kingdoms • KvK Stats Tracker</p>
             <div class="header-links">
-                <a href="leaderboard.html" class="nav-link">🏆 DKP Contribution Leaderboard</a>
+                <a href="leaderboard.html" class="nav-link" data-i18n="dashboard.dkpLeaderboard">🏆 DKP Contribution Leaderboard</a>
             </div>
         </header>
 
@@ -37,48 +41,49 @@
         <section class="leaderboard">
             <div class="leaderboard-header">
                 <div class="leaderboard-title">
-                    <h2>🏆 Leaderboard</h2>
-                    <p id="player-count">Loading...</p>
+                    <h2 data-i18n="dashboard.leaderboard">🏆 Leaderboard</h2>
+                    <p id="player-count" data-i18n="common.loading">Loading...</p>
                 </div>
 
                 <div class="controls">
-                    <input 
-                        type="text" 
-                        class="search-input" 
-                        id="search" 
+                    <input
+                        type="text"
+                        class="search-input"
+                        id="search"
+                        data-i18n-placeholder="common.searchPlayer"
                         placeholder="🔍 Search player..."
                     >
-                    <select class="sort-select" id="sort-by">
-                        <option value="kill_points_gained">Sort: Kill Points Gained</option>
-                        <option value="deads_gained">Sort: Deaths Gained</option>
-                        <option value="kill_points">Sort: Kill Points</option>
-                        <option value="power">Sort: Power</option>
-                        <option value="t5_kills">Sort: T5 Kills</option>
-                        <option value="t4_kills">Sort: T4 Kills</option>
-                        <option value="deads">Sort: Deaths</option>
+                    <select class="sort-select" id="sort-by" data-i18n-options>
+                        <option value="kill_points_gained" data-i18n="dashboard.sortKPGained">Sort: Kill Points Gained</option>
+                        <option value="deads_gained" data-i18n="dashboard.sortDeathsGained">Sort: Deaths Gained</option>
+                        <option value="kill_points" data-i18n="dashboard.sortKP">Sort: Kill Points</option>
+                        <option value="power" data-i18n="dashboard.sortPower">Sort: Power</option>
+                        <option value="t5_kills" data-i18n="dashboard.sortT5">Sort: T5 Kills</option>
+                        <option value="t4_kills" data-i18n="dashboard.sortT4">Sort: T4 Kills</option>
+                        <option value="deads" data-i18n="dashboard.sortDeaths">Sort: Deaths</option>
                     </select>
                 </div>
             </div>
 
-            <div class="scroll-hint" id="scroll-hint">← Scroll to see all columns →</div>
+            <div class="scroll-hint" id="scroll-hint" data-i18n="dashboard.scrollHint">← Scroll to see all columns →</div>
             <div class="table-wrapper" id="table-wrapper">
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
-                            <th class="rank-col">Rank</th>
-                            <th class="player-col">Governor</th>
-                            <th class="stat-col text-right">Kill Points Gained</th>
-                            <th class="stat-col text-right">Deaths Gained</th>
-                            <th class="stat-col text-right">Power</th>
-                            <th class="stat-col text-right">Kill Points</th>
-                            <th class="stat-col text-right">T5 Kills</th>
-                            <th class="stat-col text-right">T4 Kills</th>
-                            <th class="stat-col text-right">Deaths</th>
+                            <th class="rank-col" data-i18n="common.rank">Rank</th>
+                            <th class="player-col" data-i18n="common.governor">Governor</th>
+                            <th class="stat-col text-right" data-i18n="dashboard.kpGained">Kill Points Gained</th>
+                            <th class="stat-col text-right" data-i18n="dashboard.deathsGained">Deaths Gained</th>
+                            <th class="stat-col text-right" data-i18n="common.power">Power</th>
+                            <th class="stat-col text-right" data-i18n="common.killPoints">Kill Points</th>
+                            <th class="stat-col text-right" data-i18n="common.t5Kills">T5 Kills</th>
+                            <th class="stat-col text-right" data-i18n="common.t4Kills">T4 Kills</th>
+                            <th class="stat-col text-right" data-i18n="common.deaths">Deaths</th>
                         </tr>
                     </thead>
                     <tbody id="leaderboard-body">
                         <tr>
-                            <td colspan="9" class="loading">Loading leaderboard...</td>
+                            <td colspan="9" class="loading" data-i18n="dashboard.loadingLeaderboard">Loading leaderboard...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -86,20 +91,21 @@
 
             <!-- Pagination Controls -->
             <div id="pagination" class="pagination" style="display: none;">
-                <button id="first-page" class="pagination-btn">« First</button>
-                <button id="prev-page" class="pagination-btn">‹ Previous</button>
+                <button id="first-page" class="pagination-btn" data-i18n="dashboard.first">« First</button>
+                <button id="prev-page" class="pagination-btn" data-i18n="dashboard.previous">‹ Previous</button>
                 <span id="page-info" class="page-info">Page 1 of 1</span>
-                <button id="next-page" class="pagination-btn">Next ›</button>
-                <button id="last-page" class="pagination-btn">Last »</button>
+                <button id="next-page" class="pagination-btn" data-i18n="dashboard.next">Next ›</button>
+                <button id="last-page" class="pagination-btn" data-i18n="dashboard.last">Last »</button>
             </div>
         </section>
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Built for Kingdom 3584 • Rise of Kingdoms</p>
+            <p data-i18n="dashboard.footer">Built for Kingdom 3584 • Rise of Kingdoms</p>
         </footer>
     </div>
 
+    <script src="i18n.js"></script>
     <script src="utilities.js"></script>
     <script src="script.js"></script>
 </body>

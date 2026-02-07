@@ -11,11 +11,6 @@ let allContributions = [];
 let filteredContributions = [];
 
 // ========================================
-// Utility Functions
-// ========================================
-// Utility functions (formatNumber, showLoading, showError) moved to utilities.js
-
-// ========================================
 // Load Active Season
 // ========================================
 async function loadActiveSeason() {
@@ -29,12 +24,12 @@ async function loadActiveSeason() {
             displaySeasonInfo();
             return true;
         } else {
-            showError('season-info', 'No active season found');
+            showError('season-info', t('leaderboard.noActiveSeason'));
             return false;
         }
     } catch (error) {
         console.error('Failed to load active season:', error);
-        showError('season-info', 'Failed to load season information');
+        showError('season-info', t('leaderboard.failedLoadSeason'));
         return false;
     }
 }
@@ -45,12 +40,12 @@ function displaySeasonInfo() {
         <div class="season-banner">
             <div class="season-details">
                 <h3>${activeSeason.season_name}</h3>
-                <p><strong>Season ID:</strong> ${activeSeason.season_id}</p>
-                <p><strong>Status:</strong> <span class="status-badge ${activeSeason.status}">${activeSeason.status}</span></p>
+                <p><strong>${t('leaderboard.seasonId')}</strong> ${activeSeason.season_id}</p>
+                <p><strong>${t('leaderboard.statusLabel')}</strong> <span class="status-badge ${activeSeason.status}">${activeSeason.status}</span></p>
             </div>
             ${activeSeason.start_date ? `
                 <div class="season-dates">
-                    <p><strong>Started:</strong> ${new Date(activeSeason.start_date).toLocaleDateString()}</p>
+                    <p><strong>${t('leaderboard.started')}</strong> ${new Date(activeSeason.start_date).toLocaleDateString()}</p>
                 </div>
             ` : ''}
         </div>
@@ -76,28 +71,28 @@ async function loadVerificationStatus() {
             const statusDiv = document.getElementById('verification-status');
             statusDiv.innerHTML = `
                 <div class="verification-card">
-                    <h3>📊 Death Verification Progress</h3>
+                    <h3>${t('leaderboard.verificationProgress')}</h3>
                     <div class="progress-container">
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: ${percentage}%"></div>
                         </div>
-                        <div class="progress-text">${percentage.toFixed(1)}% Verified</div>
+                        <div class="progress-text">${t('leaderboard.percentVerified', { pct: percentage.toFixed(1) })}</div>
                     </div>
                     <div class="verification-stats">
                         <div class="stat-item verified">
                             <span class="stat-icon">✅</span>
                             <span class="stat-value">${verified}</span>
-                            <span class="stat-label">Verified</span>
+                            <span class="stat-label">${t('common.verified')}</span>
                         </div>
                         <div class="stat-item unverified">
                             <span class="stat-icon">⏳</span>
                             <span class="stat-value">${unverified}</span>
-                            <span class="stat-label">Unverified</span>
+                            <span class="stat-label">${t('common.unverified')}</span>
                         </div>
                         <div class="stat-item total">
                             <span class="stat-icon">👥</span>
                             <span class="stat-value">${total}</span>
-                            <span class="stat-label">Total</span>
+                            <span class="stat-label">${t('common.total')}</span>
                         </div>
                     </div>
                 </div>
@@ -114,7 +109,7 @@ async function loadVerificationStatus() {
 async function loadContributions() {
     if (!activeSeason) return;
 
-    showLoading('leaderboard-container', 'Loading contribution data...');
+    showLoading('leaderboard-container', t('leaderboard.loadingContrib'));
 
     try {
         const response = await fetch(
@@ -145,7 +140,6 @@ function displayLeaderboardStats() {
     const totalKillScore = filteredContributions.reduce((sum, c) => sum + c.total_kill_score, 0);
     const totalDeathScore = filteredContributions.reduce((sum, c) => sum + c.total_death_score, 0);
     const totalContribution = filteredContributions.reduce((sum, c) => sum + c.total_contribution_score, 0);
-    const verifiedCount = filteredContributions.filter(c => c.has_verified_deaths).length;
 
     statsDiv.innerHTML = `
         <div class="stats-grid">
@@ -153,28 +147,28 @@ function displayLeaderboardStats() {
                 <div class="stat-icon">👥</div>
                 <div class="stat-content">
                     <div class="stat-value">${filteredContributions.length}</div>
-                    <div class="stat-label">Players Shown</div>
+                    <div class="stat-label">${t('leaderboard.playersShown')}</div>
                 </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">⚔️</div>
                 <div class="stat-content">
                     <div class="stat-value">${formatNumber(totalKillScore)}</div>
-                    <div class="stat-label">Total Kill Score</div>
+                    <div class="stat-label">${t('leaderboard.totalKillScore')}</div>
                 </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">💀</div>
                 <div class="stat-content">
                     <div class="stat-value">${formatNumber(totalDeathScore)}</div>
-                    <div class="stat-label">Total Death Score</div>
+                    <div class="stat-label">${t('leaderboard.totalDeathScore')}</div>
                 </div>
             </div>
             <div class="stat-card primary">
                 <div class="stat-icon">🏆</div>
                 <div class="stat-content">
                     <div class="stat-value">${formatNumber(totalContribution)}</div>
-                    <div class="stat-label">Total DKP</div>
+                    <div class="stat-label">${t('leaderboard.totalDKP')}</div>
                 </div>
             </div>
         </div>
@@ -191,8 +185,8 @@ function displayLeaderboard() {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-icon">🏆</div>
-                <h3>No players found</h3>
-                <p>Try adjusting your filters or refresh the page.</p>
+                <h3>${t('leaderboard.noPlayersFound')}</h3>
+                <p>${t('leaderboard.tryAdjusting')}</p>
             </div>
         `;
         return;
@@ -202,14 +196,14 @@ function displayLeaderboard() {
         <table class="leaderboard-table">
             <thead>
                 <tr>
-                    <th class="rank-col">Rank</th>
-                    <th class="player-col">Player</th>
-                    <th class="score-col">T4 Kills Gained</th>
-                    <th class="score-col">T5 Kills Gained</th>
-                    <th class="score-col">T4 Deaths</th>
-                    <th class="score-col">T5 Deaths</th>
-                    <th class="total-col">Total DKP</th>
-                    <th class="status-col">Status</th>
+                    <th class="rank-col">${t('common.rank')}</th>
+                    <th class="player-col">${t('common.player')}</th>
+                    <th class="score-col">${t('leaderboard.t4KillsGained')}</th>
+                    <th class="score-col">${t('leaderboard.t5KillsGained')}</th>
+                    <th class="score-col">${t('leaderboard.t4Deaths')}</th>
+                    <th class="score-col">${t('leaderboard.t5Deaths')}</th>
+                    <th class="total-col">${t('leaderboard.totalDKP')}</th>
+                    <th class="status-col">${t('common.status')}</th>
                 </tr>
             </thead>
             <tbody>
@@ -260,8 +254,8 @@ function displayLeaderboard() {
                             </td>
                             <td class="status-col">
                                 ${contribution.has_verified_deaths
-                                    ? '<span class="status-badge verified">✅ Verified</span>'
-                                    : '<span class="status-badge unverified">⏳ Unverified</span>'
+                                    ? `<span class="status-badge verified">${t('leaderboard.verifiedBadge')}</span>`
+                                    : `<span class="status-badge unverified">${t('leaderboard.unverifiedBadge')}</span>`
                                 }
                             </td>
                         </tr>
@@ -301,9 +295,23 @@ function applyFilters() {
 }
 
 // ========================================
+// Language change handler
+// ========================================
+window.addEventListener('languageChanged', () => {
+    if (activeSeason) displaySeasonInfo();
+    if (activeSeason) loadVerificationStatus();
+    if (filteredContributions.length > 0) {
+        displayLeaderboard();
+        displayLeaderboardStats();
+    }
+});
+
+// ========================================
 // Event Listeners
 // ========================================
 document.addEventListener('DOMContentLoaded', async () => {
+    await I18n.init();
+
     // Load active season first
     const loaded = await loadActiveSeason();
 

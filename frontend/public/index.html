@@ -43,7 +43,14 @@
 </head>
 <body>
     <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
-        <p>Loading Kingdom 3584 KvK Tracker...</p>
+        <p id="loading-text">Loading Kingdom 3584 KvK Tracker...</p>
     </div>
+    <script>
+        // Quick locale check for loading text
+        const lang = localStorage.getItem('kvk_language') || (navigator.language.startsWith('ja') ? 'ja' : 'en');
+        if (lang === 'ja') {
+            document.getElementById('loading-text').textContent = '王国 3584 KvKトラッカーを読み込み中...';
+        }
+    </script>
 </body>
 </html>

@@ -10,7 +10,11 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <a href="dashboard.html" class="back-link">← Back to Leaderboard</a>
+            <div class="lang-switcher" id="lang-switcher">
+                <button class="lang-btn" data-lang="en" title="English">EN</button>
+                <button class="lang-btn" data-lang="ja" title="日本語">JA</button>
+            </div>
+            <a href="dashboard.html" class="back-link" data-i18n="common.backToLeaderboard">← Back to Leaderboard</a>
             <h1 id="player-name">Loading...</h1>
             <p id="player-id">Governor ID: ---</p>
         </header>
@@ -20,13 +24,13 @@
 
         <!-- Stats Cards -->
         <section class="player-stats-grid" id="stats-cards">
-            <div class="loading">Loading player stats...</div>
+            <div class="loading" data-i18n="player.loadingStats">Loading player stats...</div>
         </section>
 
         <!-- Charts Section -->
         <section class="charts-section">
-            <h2>📊 Performance Analysis</h2>
-            
+            <h2 data-i18n="player.performanceAnalysis">📊 Performance Analysis</h2>
+
             <div class="charts-grid-simple">
                 <!-- T5 vs T4 Distribution -->
                 <div class="chart-card">
@@ -34,7 +38,7 @@
                         <canvas id="kills-chart"></canvas>
                     </div>
                 </div>
-                
+
                 <!-- KvK Contribution Delta -->
                 <div class="chart-card">
                     <div class="chart-container-bar">
@@ -46,33 +50,34 @@
 
         <!-- Delta Summary -->
         <section class="delta-section" id="delta-section">
-            <h2>📈 KvK Changes from Baseline</h2>
+            <h2 data-i18n="player.kvkChanges">📈 KvK Changes from Baseline</h2>
             <div class="delta-grid" id="delta-grid"></div>
         </section>
 
         <!-- Progress Timeline -->
         <section class="timeline-section" id="timeline-section" style="display: none;">
-            <h2>📊 Progress Timeline</h2>
-            <p class="timeline-subtitle">Track your performance across all data uploads</p>
+            <h2 data-i18n="player.progressTimeline">📊 Progress Timeline</h2>
+            <p class="timeline-subtitle" data-i18n="player.trackPerformance">Track your performance across all data uploads</p>
 
             <div class="timeline-chart-container">
                 <canvas id="timeline-chart"></canvas>
             </div>
 
             <div class="timeline-details" id="timeline-details">
-                <h3>Upload History</h3>
+                <h3 data-i18n="player.uploadHistory">Upload History</h3>
                 <div class="timeline-snapshots" id="timeline-snapshots"></div>
             </div>
         </section>
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Kingdom 3584 • KvK Stats Tracker</p>
+            <p data-i18n="player.footer">Kingdom 3584 • KvK Stats Tracker</p>
         </footer>
     </div>
 
     <!-- Chart.js Library -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="i18n.js"></script>
     <script src="utilities.js"></script>
     <script src="player.js"></script>
 </body>

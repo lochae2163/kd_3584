@@ -51,6 +51,24 @@ async def upload_verified_deaths(
         content = await file.read()
         excel_data = pd.read_excel(io.BytesIO(content))
 
+        # Map common alternative column names to expected names
+        column_mapping = {
+            'Governor ID': 'governor_id',
+            'governor_id': 'governor_id',
+            'T4 Deaths (Enter)': 't4_deaths',
+            'T4 Deaths': 't4_deaths',
+            't4_deaths': 't4_deaths',
+            'T5 Deaths (Enter)': 't5_deaths',
+            'T5 Deaths': 't5_deaths',
+            't5_deaths': 't5_deaths',
+            'Notes': 'notes',
+            'notes': 'notes',
+        }
+        excel_data.rename(
+            columns={col: column_mapping[col] for col in excel_data.columns if col in column_mapping},
+            inplace=True
+        )
+
         # Validate required columns
         required_cols = ['governor_id', 't4_deaths', 't5_deaths']
         missing_cols = [col for col in required_cols if col not in excel_data.columns]
@@ -58,7 +76,7 @@ async def upload_verified_deaths(
         if missing_cols:
             raise HTTPException(
                 status_code=400,
-                detail=f"Missing required columns: {', '.join(missing_cols)}"
+                detail=f"Missing required columns: {', '.join(missing_cols)}. Expected: governor_id, t4_deaths, t5_deaths"
             )
 
         # Get current data to validate governor IDs

@@ -210,7 +210,7 @@ async def get_unverified_players(kvk_season_id: str):
         {
             "governor_id": p.get('governor_id'),
             "governor_name": p.get('governor_name', 'Unknown'),
-            "power": p.get('power', 0),
+            "power": p.get('stats', {}).get('power', 0),
         }
         for p in players
         if not p.get('verified_deaths', {}).get('verified', False)

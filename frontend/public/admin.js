@@ -1202,8 +1202,10 @@ if (verifiedDeathsForm) {
         showMessage(verifiedDeathsMessage, 'info', '⏳ Uploading and processing...');
 
         try {
+            const token = localStorage.getItem('admin_token');
             const response = await fetch(`${API_URL}/admin/verified-deaths/upload/${activeSeason.season_id}`, {
                 method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
             });
 

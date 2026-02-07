@@ -1202,7 +1202,7 @@ if (verifiedDeathsForm) {
         showMessage(verifiedDeathsMessage, 'info', '⏳ Uploading and processing...');
 
         try {
-            const response = await fetch(`${API_URL}/admin/verified-deaths/upload/${activeSeason}`, {
+            const response = await fetch(`${API_URL}/admin/verified-deaths/upload/${activeSeason.season_id}`, {
                 method: 'POST',
                 body: formData
             });

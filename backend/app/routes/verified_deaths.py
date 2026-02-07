@@ -55,10 +55,8 @@ async def upload_verified_deaths(
         column_mapping = {
             'Governor ID': 'governor_id',
             'governor_id': 'governor_id',
-            'T4 Deaths (Enter)': 't4_deaths',
             'T4 Deaths': 't4_deaths',
             't4_deaths': 't4_deaths',
-            'T5 Deaths (Enter)': 't5_deaths',
             'T5 Deaths': 't5_deaths',
             't5_deaths': 't5_deaths',
             'Notes': 'notes',

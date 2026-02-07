@@ -108,6 +108,11 @@ async def upload_verified_deaths(
                 t5_deaths = int(row['t5_deaths'])
                 notes = str(row.get('notes', '')).strip() if pd.notna(row.get('notes')) else None
 
+                # Skip players with 0/0 deaths - not verified
+                if t4_deaths == 0 and t5_deaths == 0:
+                    results['skipped_count'] = results.get('skipped_count', 0) + 1
+                    continue
+
                 # Validate player exists
                 if gov_id not in existing_players:
                     results['not_found_count'] += 1
@@ -166,7 +171,7 @@ async def upload_verified_deaths(
 
         return {
             "success": True,
-            "message": f"Processed {results['total_rows']} rows: {results['success_count']} updated, {results['not_found_count']} not found, {results['error_count']} errors",
+            "message": f"Processed {results['total_rows']} rows: {results['success_count']} updated, {results.get('skipped_count', 0)} skipped (0/0 deaths), {results['not_found_count']} not found, {results['error_count']} errors",
             "kvk_season_id": kvk_season_id,
             "file_name": file.filename,
             "results": results,
@@ -181,6 +186,37 @@ async def upload_verified_deaths(
             status_code=500,
             detail=f"Failed to process file: {str(e)}"
         )
+
+
+@router.get("/unverified/{kvk_season_id}")
+async def get_unverified_players(kvk_season_id: str):
+    """Get list of players without verified death data."""
+    current_col = Database.get_collection("current_data")
+    current_data = await current_col.find_one({"kvk_season_id": kvk_season_id})
+
+    if not current_data:
+        raise HTTPException(status_code=404, detail=f"No data found for season {kvk_season_id}")
+
+    players = current_data.get('players', [])
+    unverified = [
+        {
+            "governor_id": p.get('governor_id'),
+            "governor_name": p.get('governor_name', 'Unknown'),
+            "power": p.get('power', 0),
+        }
+        for p in players
+        if not p.get('verified_deaths', {}).get('verified', False)
+    ]
+    # Sort by power descending so highest power unverified show first
+    unverified.sort(key=lambda x: x['power'], reverse=True)
+
+    return {
+        "success": True,
+        "kvk_season_id": kvk_season_id,
+        "unverified_count": len(unverified),
+        "total_players": len(players),
+        "players": unverified
+    }
 
 
 @router.get("/status/{kvk_season_id}")

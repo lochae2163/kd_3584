@@ -1165,11 +1165,55 @@ async function loadVerificationStatus() {
                         </div>
                     </div>
                 </div>
+                <div id="unverified-list"></div>
             `;
+
+            // Load unverified player list
+            if (unverified > 0) {
+                await loadUnverifiedPlayers();
+            }
         }
     } catch (error) {
         console.error('Failed to load verification status:', error);
         statusDiv.innerHTML = '<div class="error">Failed to load verification status</div>';
+    }
+}
+
+async function loadUnverifiedPlayers() {
+    const listDiv = document.getElementById('unverified-list');
+    if (!listDiv || !activeSeason) return;
+
+    try {
+        const response = await fetch(`${API_URL}/admin/verified-deaths/unverified/${activeSeason.season_id}`);
+        const data = await response.json();
+
+        if (data.success && data.players.length > 0) {
+            const rows = data.players.map((p, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${p.governor_name}</td>
+                    <td>${p.governor_id}</td>
+                    <td>${(p.power || 0).toLocaleString()}</td>
+                </tr>
+            `).join('');
+
+            listDiv.innerHTML = `
+                <div class="status-card" style="margin-top: 12px;">
+                    <h3>❌ Unverified Players (${data.unverified_count})</h3>
+                    <p style="color: #94a3b8; margin-bottom: 8px;">These players have no death data submitted yet.</p>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table class="admin-table" style="width: 100%;">
+                            <thead><tr><th>#</th><th>Name</th><th>Governor ID</th><th>Power</th></tr></thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } else {
+            listDiv.innerHTML = '';
+        }
+    } catch (error) {
+        console.error('Failed to load unverified players:', error);
     }
 }
 
